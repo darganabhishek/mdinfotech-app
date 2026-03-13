@@ -1,65 +1,107 @@
-const { execSync } = require('child_process');
+const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
-const path = require('path');
-const Database = require('better-sqlite3');
 
-// Direct SQLite approach since Prisma v7 client has complex initialization
-const dbPath = path.join(__dirname, 'dev.db');
+const prisma = new PrismaClient();
 
-// Use Prisma through a helper script approach
 async function main() {
-  // We'll use a simpler approach - write a TypeScript seed that runs via tsx
+  console.log('🌱 Seeding database...');
+
   const hashedPassword = await bcrypt.hash('admin@123', 12);
-  
-  // Direct SQL approach using sqlite3
-  const sqlite3 = require('better-sqlite3');
-  const db = sqlite3(dbPath);
-  
-  // Insert admin user
-  const insertUser = db.prepare(`
-    INSERT OR IGNORE INTO User (name, username, password, role, active, createdAt, updatedAt)
-    VALUES (?, ?, ?, ?, ?, datetime('now'), datetime('now'))
-  `);
-  insertUser.run('Super Admin', 'admin', hashedPassword, 'superadmin', 1);
-  
-  // Insert courses
-  const insertCourse = db.prepare(`
-    INSERT OR IGNORE INTO Course (name, code, duration, durationUnit, fee, description, active, createdAt, updatedAt)
-    VALUES (?, ?, ?, ?, ?, ?, 1, datetime('now'), datetime('now'))
-  `);
-  
+
+  // 1. Create Admin User
+  const admin = await prisma.user.upsert({
+    where: { username: 'admin' },
+    update: {},
+    create: {
+      name: 'Super Admin',
+      username: 'admin',
+      password: hashedPassword,
+      role: 'superadmin',
+      active: true,
+    },
+  });
+
+  console.log(`✅ Admin user created: ${admin.username}`);
+
+  // 2. Create Courses
   const courses = [
-    ['Basic Computer Course', 'BCC', 3, 'months', 3000, 'MS Office, Internet, Email, Typing'],
-    ['Tally Prime with GST', 'TALLY', 3, 'months', 5000, 'Tally Prime, GST, Accounting, Inventory'],
-    ['Advanced Excel', 'AEXL', 2, 'months', 4000, 'Advanced Formulas, Pivot Tables, Macros, VBA'],
-    ['DCA (Diploma in Computer Application)', 'DCA', 12, 'months', 12000, 'Complete Computer Application Diploma'],
-    ['ADCA (Advanced Diploma)', 'ADCA', 18, 'months', 18000, 'Advanced Diploma in Computer Application'],
-    ['Web Development', 'WEBDEV', 6, 'months', 15000, 'HTML, CSS, JavaScript, React, Node.js'],
-    ['Python Programming', 'PYTHON', 4, 'months', 8000, 'Python basics to advanced with projects'],
-    ['Graphic Design', 'GFX', 4, 'months', 8000, 'Photoshop, Illustrator, CorelDRAW'],
+    { name: 'Basic Computer Course', code: 'BCC', duration: 3, durationUnit: 'months', fee: 3000, description: 'MS Office, Internet, Email, Typing' },
+    { name: 'Tally Prime with GST', code: 'TALLY', duration: 3, durationUnit: 'months', fee: 5000, description: 'Tally Prime, GST, Accounting, Inventory' },
+    { name: 'Advanced Excel', code: 'AEXL', duration: 2, durationUnit: 'months', fee: 4000, description: 'Advanced Formulas, Pivot Tables, Macros, VBA' },
+    { name: 'DCA (Diploma in Computer Application)', code: 'DCA', duration: 12, durationUnit: 'months', fee: 12000, description: 'Complete Computer Application Diploma' },
+    { name: 'ADCA (Advanced Diploma)', code: 'ADCA', duration: 18, durationUnit: 'months', fee: 18000, description: 'Advanced Diploma in Computer Application' },
+    { name: 'Web Development', code: 'WEBDEV', duration: 6, durationUnit: 'months', fee: 15000, description: 'HTML, CSS, JavaScript, React, Node.js' },
+    { name: 'Python Programming', code: 'PYTHON', duration: 4, durationUnit: 'months', fee: 8000, description: 'Python basics to advanced with projects' },
+    { name: 'Graphic Design', code: 'GFX', duration: 4, durationUnit: 'months', fee: 8000, description: 'Photoshop, Illustrator, CorelDRAW' },
   ];
-  
-  for (const c of courses) {
-    insertCourse.run(...c);
+
+  for (const course of courses) {
+    await prisma.course.upsert({
+      where: { code: course.code },
+      update: {},
+      create: course,
+    });
   }
-  
-  // Get courses for batch creation
-  const allCourses = db.prepare('SELECT * FROM Course').all();
-  
-  const insertBatch = db.prepare(`
-    INSERT OR IGNORE INTO Batch (name, courseId, startDate, timing, instructor, capacity, status, createdAt, updatedAt)
-    VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
-  `);
-  
+
+  console.log('✅ Courses created');
+
+  // 3. Create Batches
+  const allCourses = await prisma.course.findMany();
   for (const course of allCourses) {
-    insertBatch.run(`${course.code} - Morning Batch`, course.id, '2026-01-01', '10:00 AM - 12:00 PM', 'TBD', 25, 'active');
-    insertBatch.run(`${course.code} - Evening Batch`, course.id, '2026-01-01', '4:00 PM - 6:00 PM', 'TBD', 25, 'active');
+    const morningBatchName = `${course.code} - Morning Batch`;
+    const eveningBatchName = `${course.code} - Evening Batch`;
+
+    await prisma.batch.create({
+      data: {
+        name: morningBatchName,
+        courseId: course.id,
+        startDate: '2026-01-01',
+        timing: '10:00 AM - 12:00 PM',
+        instructor: 'TBD',
+        capacity: 25,
+        status: 'active',
+      },
+    });
+
+    await prisma.batch.create({
+      data: {
+        name: eveningBatchName,
+        courseId: course.id,
+        startDate: '2026-01-01',
+        timing: '4:00 PM - 6:00 PM',
+        instructor: 'TBD',
+        capacity: 25,
+        status: 'active',
+      },
+    });
   }
-  
-  db.close();
-  
-  console.log('✅ Database seeded successfully!');
+
+  console.log('✅ Batches created');
+
+  // 4. Create Initial Settings
+  await prisma.settings.upsert({
+    where: { id: 1 },
+    update: {},
+    create: {
+      id: 1,
+      instituteName: 'M.D. INFOTECH',
+      tagline: 'Professional Computer Institute',
+      address: '123 Tech Lane, Digital City, 54321',
+      phone: '+91 9716161624',
+      email: 'itmdinfotech@gmail.com',
+    },
+  });
+
+  console.log('✅ Settings created');
+  console.log('\n🚀 Database seeding complete!');
   console.log('📧 Login: admin / admin@123');
 }
 
-main().catch(e => { console.error(e); process.exit(1); });
+main()
+  .catch((e) => {
+    console.error('❌ Seeding error:', e);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });
