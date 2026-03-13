@@ -29,6 +29,9 @@ const navItems = [
   { section: 'Finance', items: [
     { href: '/dashboard/payments', label: 'Payments', icon: FiDollarSign },
     { href: '/dashboard/receipts', label: 'Receipts', icon: FiFileText },
+    { href: '/dashboard/payroll', label: 'Payroll', icon: FiDollarSign },
+    { href: '/dashboard/analytics', label: 'Course Analytics', icon: FiBarChart2 },
+    { href: '/dashboard/referrals', label: 'Referral Program', icon: FiUserPlus },
   ]},
   { section: 'Academics', items: [
     { href: '/dashboard/student', label: 'Student Portal', icon: FiBook },
@@ -41,7 +44,7 @@ const navItems = [
     { href: '/dashboard/settings', label: 'Settings', icon: FiSettings },
     { href: '/dashboard/users', label: 'User Accounts', icon: FiUsers },
     { href: '/dashboard/settings/roles', label: 'Role Management', icon: FiShield },
-    { href: '/dashboard/logs', label: 'Activity Logs', icon: FiActivity },
+    { href: '/dashboard/logs', label: 'Audit Logs', icon: FiActivity },
   ]},
 ];
 
