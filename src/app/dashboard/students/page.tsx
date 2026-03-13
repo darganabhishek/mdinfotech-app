@@ -60,9 +60,10 @@ export default function StudentsPage() {
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm('Are you sure?')) return;
+    if (!confirm('Are you sure you want to permanently delete this student? This will also remove all their admissions, attendance, and payment records.')) return;
     const res = await fetch(`/api/students/${id}`, { method: 'DELETE' });
-    if (res.ok) { showToast('success', 'Student deactivated'); fetchStudents(); }
+    if (res.ok) { showToast('success', 'Student deleted successfully'); fetchStudents(); }
+    else { const err = await res.json().catch(() => ({})); showToast('error', err.error || 'Delete failed'); }
   };
 
   const resetForm = () => setForm({ name: '', fatherName: '', motherName: '', phone: '', email: '', address: '', city: '', state: '', pincode: '', dob: '', gender: '', qualification: '' });

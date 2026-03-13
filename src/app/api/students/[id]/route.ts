@@ -27,8 +27,29 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = await params;
-    await prisma.student.update({ where: { id: parseInt(id) }, data: { status: 'inactive' } });
-    return NextResponse.json({ success: true });
-  } catch { return NextResponse.json({ error: 'Error' }, { status: 500 }); }
+    const { id: idStr } = await params;
+    const id = parseInt(idStr);
+
+    // Delete all related records first (cascade)
+    await prisma.attendance.deleteMany({ where: { studentId: id } });
+    await prisma.submission.deleteMany({ where: { studentId: id } });
+    await prisma.referral.deleteMany({ where: { referrerStudentId: id } });
+
+    // Delete payments tied to admissions, then admissions
+    const admissions = await prisma.admission.findMany({ where: { studentId: id }, select: { id: true } });
+    const admissionIds = admissions.map(a => a.id);
+    if (admissionIds.length > 0) {
+      await prisma.payment.deleteMany({ where: { admissionId: { in: admissionIds } } });
+      await prisma.certificate.deleteMany({ where: { admissionId: { in: admissionIds } } });
+      await prisma.admission.deleteMany({ where: { studentId: id } });
+    }
+
+    // Finally delete the student
+    await prisma.student.delete({ where: { id } });
+
+    return NextResponse.json({ success: true, message: 'Student permanently deleted' });
+  } catch (error: any) {
+    console.error('Student delete error:', error);
+    return NextResponse.json({ error: error.message || 'Failed to delete student' }, { status: 500 });
+  }
 }
