@@ -8,27 +8,106 @@ async function main() {
 
   const hashedPassword = await bcrypt.hash('admin@123', 12);
 
-  // 0. Clear existing data related to courses/batches to avoid conflicts
+  // 0. Clear existing data
+  await prisma.auditLog.deleteMany({});
+  await prisma.payment.deleteMany({});
+  await prisma.admission.deleteMany({});
   await prisma.batch.deleteMany({});
   await prisma.course.deleteMany({});
-  console.log('🗑️  Cleared existing courses and batches');
+  await prisma.faculty.deleteMany({});
+  await prisma.user.deleteMany({});
+  await prisma.permission.deleteMany({});
+  await prisma.role.deleteMany({});
+  console.log('🗑️  Cleared existing DB');
 
-  // 1. Create Admin User
-  const admin = await prisma.user.upsert({
-    where: { username: 'admin' },
-    update: {},
-    create: {
+  // 1. Create Permissions
+  const permissionsData = [
+    { name: 'manage_students', description: 'Create, edit, and delete students' },
+    { name: 'manage_courses', description: 'Create and edit courses' },
+    { name: 'manage_batches', description: 'Manage schedules and batches' },
+    { name: 'manage_admissions', description: 'Handle new admissions' },
+    { name: 'manage_payments', description: 'Record and view payments' },
+    { name: 'view_reports', description: 'Access financial and academic reports' },
+    { name: 'manage_exams', description: 'Create and grade assignments/exams' },
+    { name: 'manage_users', description: 'Manage staff accounts and permissions' },
+    { name: 'manage_settings', description: 'Update institute profile' },
+    { name: 'student_portal', description: 'Access basic student features' },
+    { name: 'teacher_portal', description: 'Access teacher features' },
+  ];
+
+  const permissions = {};
+  for (const p of permissionsData) {
+    permissions[p.name] = await prisma.permission.create({ data: p });
+  }
+  console.log('✅ Permissions created');
+
+  // 2. Create Roles
+  const adminRole = await prisma.role.create({
+    data: {
+      name: 'superadmin',
+      description: 'Full system access',
+      permissions: { connect: Object.values(permissions).map(p => ({ id: p.id })) }
+    }
+  });
+
+  const staffRole = await prisma.role.create({
+    data: {
+      name: 'staff',
+      description: 'Manage admissions and payments',
+      permissions: { 
+        connect: [
+          'manage_students', 'manage_batches', 'manage_admissions', 'manage_payments', 'view_reports'
+        ].map(name => ({ id: permissions[name].id }))
+      }
+    }
+  });
+
+  const teacherRole = await prisma.role.create({
+    data: {
+      name: 'teacher',
+      description: 'Manage classes and exams',
+      permissions: { 
+        connect: [
+          'teacher_portal', 'manage_exams', 'view_reports'
+        ].map(name => ({ id: permissions[name].id }))
+      }
+    }
+  });
+
+  const studentRole = await prisma.role.create({
+    data: {
+      name: 'student',
+      description: 'Access student portal',
+      permissions: { 
+        connect: [{ id: permissions['student_portal'].id }]
+      }
+    }
+  });
+  console.log('✅ Roles created');
+
+  // 3. Create Users
+  const superAdmin = await prisma.user.create({
+    data: {
       name: 'Super Admin',
       username: 'admin',
       password: hashedPassword,
-      role: 'superadmin',
+      roleId: adminRole.id,
       active: true,
     },
   });
 
-  console.log(`✅ Admin user created: ${admin.username}`);
+  const sampleStaff = await prisma.user.create({
+    data: {
+      name: 'Office Staff',
+      username: 'staff',
+      password: hashedPassword,
+      roleId: staffRole.id,
+      active: true,
+    },
+  });
+  console.log('✅ Admin and Staff users created');
 
-  // 2. Create New Courses from Flyers
+  // 4. Create New Courses from Flyers
   const courses = [
     { name: 'Basic Tech with AI', code: 'BT-AI', duration: 3, durationUnit: 'months', fee: 0, description: 'Computer Fundamentals, Internet, Word, Excel, PowerPoint, AI Basics' },
     { name: "Office X'pert with AI", code: 'OX-AI', duration: 6, durationUnit: 'months', fee: 0, description: 'Comprehensive Office Suite with Access, Outlook, Publisher, Typing & Advanced AI' },
@@ -60,11 +139,29 @@ async function main() {
 
   console.log('✅ New courses created');
 
-  // 3. Create Batches for new courses
+  // 5. Create Faculty
+  const facultyData = [
+    { name: 'Dr. John Smith', specialization: 'Computer Fundamentals & MS Office', email: 'john@mdinfotech.com' },
+    { name: 'Ms. Sarah Connor', specialization: 'Tally & Accounting', email: 'sarah@mdinfotech.com' },
+    { name: 'Mr. Alex Rivers', specialization: 'Python & Web Development', email: 'alex@mdinfotech.com' },
+  ];
+
+  const faculty = [];
+  for (const f of facultyData) {
+    faculty.push(await prisma.faculty.create({ data: f }));
+  }
+  console.log('✅ Faculty created');
+
+  // 6. Create Batches
   const allCourses = await prisma.course.findMany();
-  for (const course of allCourses) {
+  for (let i = 0; i < allCourses.length; i++) {
+    const course = allCourses[i];
     const morningBatchName = `${course.code} - Morning Batch`;
     const eveningBatchName = `${course.code} - Evening Batch`;
+    
+    // Assign faculty in rotation
+    const faculty1 = faculty[i % faculty.length].id;
+    const faculty2 = faculty[(i + 1) % faculty.length].id;
 
     await prisma.batch.create({
       data: {
@@ -72,7 +169,7 @@ async function main() {
         courseId: course.id,
         startDate: '2026-04-01',
         timing: '10:00 AM - 12:00 PM',
-        instructor: 'TBD',
+        facultyId: faculty1,
         capacity: 25,
         status: 'active',
       },
@@ -84,7 +181,7 @@ async function main() {
         courseId: course.id,
         startDate: '2026-04-01',
         timing: '4:00 PM - 6:00 PM',
-        instructor: 'TBD',
+        facultyId: faculty2,
         capacity: 25,
         status: 'active',
       },

@@ -12,15 +12,56 @@ model User {
   name      String
   username  String   @unique
   password  String
-  role      String   @default("staff")
+  roleId    Int?
+  role      Role?    @relation(fields: [roleId], references: [id])
   active    Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   auditLogs AuditLog[]
+  student   Student?
+  faculty   Faculty?
+}
+
+model Role {
+  id          Int          @id @default(autoincrement())
+  name        String       @unique
+  description String?
+  permissions Permission[]
+  users       User[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+model Permission {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique // e.g., "manage_students", "view_reports"
+  description String?
+  roles       Role[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Faculty {
+  id             Int       @id @default(autoincrement())
+  userId         Int?      @unique
+  user           User?     @relation(fields: [userId], references: [id])
+  name           String
+  email          String    @default("")
+  phone          String    @default("")
+  qualification  String    @default("")
+  specialization String    @default("") // Subjects/Courses taught
+  joiningDate    String?
+  salary         Float     @default(0)
+  active         Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  batches        Batch[]
 }
 
 model Student {
   id           Int         @id @default(autoincrement())
+  userId       Int?        @unique
+  user         User?       @relation(fields: [userId], references: [id])
   enrollmentNo String      @unique
   name         String
   fatherName   String      @default("")
@@ -66,7 +107,8 @@ model Batch {
   startDate  String      @default("")
   endDate    String      @default("")
   timing     String      @default("")
-  instructor String      @default("")
+  facultyId   Int?
+  faculty    Faculty?    @relation(fields: [facultyId], references: [id])
   capacity   Int         @default(30)
   status     String      @default("active")
   createdAt  DateTime    @default(now())

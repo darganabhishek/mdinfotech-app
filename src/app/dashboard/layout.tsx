@@ -7,7 +7,7 @@ import { useState } from 'react';
 import {
   FiHome, FiUsers, FiBook, FiLayers, FiUserPlus, FiDollarSign,
   FiFileText, FiMessageSquare, FiBarChart2, FiSettings, FiLogOut,
-  FiMenu, FiX, FiAward, FiActivity, FiSun, FiMoon
+  FiMenu, FiX, FiAward, FiActivity, FiSun, FiMoon, FiShield
 } from 'react-icons/fi';
 import Providers from '@/components/Providers';
 import { useTheme } from '@/context/ThemeContext';
@@ -21,6 +21,7 @@ const navItems = [
     { href: '/dashboard/courses', label: 'Courses', icon: FiBook },
     { href: '/dashboard/batches', label: 'Batches', icon: FiLayers },
     { href: '/dashboard/admissions', label: 'Admissions', icon: FiUserPlus },
+    { href: '/dashboard/faculty', label: 'Faculty Management', icon: FiUsers },
   ]},
   { section: 'Finance', items: [
     { href: '/dashboard/payments', label: 'Payments', icon: FiDollarSign },
@@ -31,6 +32,8 @@ const navItems = [
     { href: '/dashboard/certificates', label: 'Certificates', icon: FiAward },
     { href: '/dashboard/reports', label: 'Reports', icon: FiBarChart2 },
     { href: '/dashboard/settings', label: 'Settings', icon: FiSettings },
+    { href: '/dashboard/users', label: 'User Accounts', icon: FiUsers },
+    { href: '/dashboard/settings/roles', label: 'Role Management', icon: FiShield },
     { href: '/dashboard/logs', label: 'Activity Logs', icon: FiActivity },
   ]},
 ];
