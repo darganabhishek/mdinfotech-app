@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { FiUsers, FiPlus, FiEdit2, FiTrash2, FiMail, FiPhone, FiBookOpen, FiX } from 'react-icons/fi';
+import { FiUsers, FiPlus, FiEdit2, FiTrash2, FiMail, FiPhone, FiBookOpen, FiX, FiDownload } from 'react-icons/fi';
 import toast from 'react-hot-toast';
+import BulkActions from '@/components/dashboard/BulkActions';
 
 interface Faculty {
   id: number;
@@ -20,6 +21,7 @@ export default function FacultyPage() {
   const [faculty, setFaculty] = useState<Faculty[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
+  const [showBulk, setShowBulk] = useState(false);
   const [editingFaculty, setEditingFaculty] = useState<Faculty | null>(null);
   const [formData, setFormData] = useState({
     name: '',
@@ -46,6 +48,20 @@ export default function FacultyPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const exportCSV = () => {
+    const headers = 'Name,Email,Phone,Qualification,Specialization,Salary,Status\n';
+    const rows = faculty.map(f => 
+      `"${f.name}","${f.email}","${f.phone}","${f.qualification}","${f.specialization}",${f.salary},"${f.active ? 'Active' : 'Inactive'}"`
+    ).join('\n');
+    
+    const blob = new Blob([headers + rows], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `faculty_export_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
   };
 
   const handleOpenModal = (f: Faculty | null = null) => {
@@ -106,10 +122,22 @@ export default function FacultyPage() {
           <h2>Faculty Management</h2>
           <p>Manage teacher profiles, qualifications, and schedules.</p>
         </div>
-        <button className="btn btn-primary" onClick={() => handleOpenModal()}>
-          <FiPlus /> Add Faculty
-        </button>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button className="btn btn-outline" onClick={() => setShowBulk(!showBulk)}>
+            {showBulk ? 'Hide Bulk' : 'Bulk Import'}
+          </button>
+          <button className="btn btn-outline" onClick={exportCSV}>
+             <FiDownload /> Export
+          </button>
+          <button className="btn btn-primary" onClick={() => handleOpenModal()}>
+            <FiPlus /> Add Faculty
+          </button>
+        </div>
       </div>
+
+      {showBulk && (
+        <BulkActions type="faculty" onComplete={fetchData} />
+      )}
 
       <div className="kpi-grid">
         <div className="kpi-card green">

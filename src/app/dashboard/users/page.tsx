@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { FiUsers, FiPlus, FiEdit2, FiTrash2, FiKey, FiLock, FiX } from 'react-icons/fi';
+import { FiUsers, FiPlus, FiEdit2, FiTrash2, FiKey, FiLock, FiX, FiDownload } from 'react-icons/fi';
 import toast from 'react-hot-toast';
+import BulkActions from '@/components/dashboard/BulkActions';
 
 interface Role {
   id: number;
@@ -22,6 +23,7 @@ export default function UsersPage() {
   const [roles, setRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
+  const [showBulk, setShowBulk] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [formData, setFormData] = useState({
     name: '',
@@ -50,6 +52,20 @@ export default function UsersPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const exportCSV = () => {
+    const headers = 'Name,Username,Role,Status\n';
+    const rows = users.map(u => 
+      `"${u.name}","${u.username}","${u.role?.name || ''}","${u.active ? 'Active' : 'Disabled'}"`
+    ).join('\n');
+    
+    const blob = new Blob([headers + rows], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `users_export_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
   };
 
   const handleOpenModal = (user: User | null = null) => {
@@ -120,11 +136,22 @@ export default function UsersPage() {
           <h2>User Accounts</h2>
           <p>Manage staff, faculty, and administrative access.</p>
         </div>
-        <button className="btn btn-primary" onClick={() => handleOpenModal()}>
-          <FiPlus /> New User
-        </button>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button className="btn btn-outline" onClick={() => setShowBulk(!showBulk)}>
+            {showBulk ? 'Hide Bulk' : 'Bulk Import'}
+          </button>
+          <button className="btn btn-outline" onClick={exportCSV}>
+            <FiDownload /> Export
+          </button>
+          <button className="btn btn-primary" onClick={() => handleOpenModal()}>
+            <FiPlus /> New User
+          </button>
+        </div>
       </div>
 
+      {showBulk && (
+        <BulkActions type="users" onComplete={fetchData} />
+      )}
       <div className="data-card">
         <div className="data-table-wrap">
           <table className="data-table">

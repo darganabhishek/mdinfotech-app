@@ -10,7 +10,13 @@ export async function GET(
     const id = parseInt(idStr);
     const batch = await prisma.batch.findUnique({
       where: { id },
-      include: { course: true, _count: { select: { admissions: true } } }
+      include: { 
+        course: true, 
+        _count: { select: { admissions: true } },
+        admissions: {
+          include: { student: { select: { id: true, name: true, enrollmentNo: true } } }
+        }
+      }
     });
     if (!batch) return NextResponse.json({ error: 'Batch not found' }, { status: 404 });
     return NextResponse.json(batch);

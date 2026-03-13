@@ -22,10 +22,15 @@ const navItems = [
     { href: '/dashboard/batches', label: 'Batches', icon: FiLayers },
     { href: '/dashboard/admissions', label: 'Admissions', icon: FiUserPlus },
     { href: '/dashboard/faculty', label: 'Faculty Management', icon: FiUsers },
+    { href: '/dashboard/attendance', label: 'Attendance Hub', icon: FiActivity },
   ]},
   { section: 'Finance', items: [
     { href: '/dashboard/payments', label: 'Payments', icon: FiDollarSign },
     { href: '/dashboard/receipts', label: 'Receipts', icon: FiFileText },
+  ]},
+  { section: 'Academics', items: [
+    { href: '/dashboard/student', label: 'Student Portal', icon: FiBook },
+    { href: '/dashboard/elearning', label: 'E-learning Hub', icon: FiFileText },
   ]},
   { section: 'Other', items: [
     { href: '/dashboard/enquiries', label: 'Enquiries', icon: FiMessageSquare },
