@@ -60,6 +60,7 @@ model Faculty {
   batches        Batch[]
   assignments    Assignment[]
   resources      ElearningResource[]
+  timetableSlots TimetableSlot[]
 }
 
 model Student {
@@ -123,6 +124,7 @@ model Batch {
   admissions Admission[]
   attendances Attendance[]
   assignments Assignment[]
+  timetableSlots TimetableSlot[]
 }
 
 model Admission {
@@ -277,4 +279,36 @@ model Notification {
   isRead      Boolean  @default(false)
   link        String?
   createdAt   DateTime @default(now())
+}
+
+model TimetableSlot {
+  id          Int      @id @default(autoincrement())
+  day         String   // "Monday", "Tuesday", etc.
+  startTime   String   // "09:00"
+  endTime     String   // "10:30"
+  subject     String
+  room        String   @default("")
+  batchId     Int
+  batch       Batch    @relation(fields: [batchId], references: [id])
+  facultyId   Int
+  faculty     Faculty  @relation(fields: [facultyId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([day, startTime, batchId])
+  @@unique([day, startTime, facultyId])
+}
+
+model Resource {
+  id          Int      @id @default(autoincrement())
+  name        String
+  category    String   // "lab_computer", "software_license", "projector", "room"
+  description String?
+  quantity    Int      @default(1)
+  available   Int      @default(1)
+  location    String   @default("")
+  status      String   @default("available") // "available", "in_use", "maintenance"
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }

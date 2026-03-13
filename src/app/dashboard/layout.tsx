@@ -23,6 +23,8 @@ const navItems = [
     { href: '/dashboard/admissions', label: 'Admissions', icon: FiUserPlus },
     { href: '/dashboard/faculty', label: 'Faculty Management', icon: FiUsers },
     { href: '/dashboard/attendance', label: 'Attendance Hub', icon: FiActivity },
+    { href: '/dashboard/timetable', label: 'Timetable', icon: FiLayers },
+    { href: '/dashboard/resources', label: 'Resources', icon: FiSettings },
   ]},
   { section: 'Finance', items: [
     { href: '/dashboard/payments', label: 'Payments', icon: FiDollarSign },
