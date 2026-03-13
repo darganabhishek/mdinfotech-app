@@ -7,9 +7,10 @@ import { useState } from 'react';
 import {
   FiHome, FiUsers, FiBook, FiLayers, FiUserPlus, FiDollarSign,
   FiFileText, FiMessageSquare, FiBarChart2, FiSettings, FiLogOut,
-  FiMenu, FiX, FiAward, FiActivity
+  FiMenu, FiX, FiAward, FiActivity, FiSun, FiMoon
 } from 'react-icons/fi';
 import Providers from '@/components/Providers';
+import { useTheme } from '@/context/ThemeContext';
 
 const navItems = [
   { section: 'Main', items: [
@@ -38,6 +39,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { data: session } = useSession();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { theme, toggleTheme } = useTheme();
 
   const getPageTitle = () => {
     for (const section of navItems) {
@@ -105,6 +107,13 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
             <h1>{getPageTitle()}</h1>
           </div>
           <div className="top-bar-right">
+            <button 
+              className="theme-toggle" 
+              onClick={toggleTheme}
+              title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
+            >
+              {theme === 'light' ? <FiMoon /> : <FiSun />}
+            </button>
             <div className="user-menu">
               <div className="user-avatar">
                 {session?.user?.name?.charAt(0) || 'A'}
@@ -139,6 +148,29 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
           .mobile-overlay { display: block !important; }
           .dashboard-layout { position: relative; width: 100vw; overflow-x: hidden; }
           .main-content { min-width: 100vw; }
+        }
+
+        .theme-toggle {
+          background: var(--bg-card);
+          border: 1px solid var(--border-color);
+          color: var(--text-primary);
+          width: 38px;
+          height: 38px;
+          border-radius: var(--radius-md);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          font-size: 1.2rem;
+          transition: all var(--transition-fast);
+        }
+        
+        .theme-toggle:hover {
+          background: var(--bg-card-hover);
+          border-color: var(--brand-blue-light);
+          color: var(--brand-blue-light);
+          transform: translateY(-2px);
+          box-shadow: var(--shadow-md);
         }
       `}</style>
     </div>

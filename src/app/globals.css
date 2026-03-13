@@ -74,6 +74,41 @@
   --transition-slow: 0.4s ease;
 }
 
+[data-theme='light'] {
+  /* Brand Colors (Stay mostly the same) */
+  --brand-blue: #1a237e;
+  --brand-blue-light: #303f9f;
+  --brand-blue-dark: #000051;
+  
+  /* Light Theme Specifics */
+  --bg-primary: #f8f9fc;
+  --bg-secondary: #ffffff;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f1f3f9;
+  --bg-sidebar: #ffffff;
+  --bg-input: #ffffff;
+  --bg-modal: rgba(255, 255, 255, 0.98);
+
+  /* Text */
+  --text-primary: #1a202c;
+  --text-secondary: #4a5568;
+  --text-muted: #718096;
+  --text-accent: #3949ab;
+
+  /* Borders */
+  --border-color: #e2e8f0;
+  --border-focus: #3f51b5;
+
+  /* Shadows - softer for light mode */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+
+  /* Gradients */
+  --gradient-card: linear-gradient(135deg, #ffffff, #f8f9fc);
+}
+
 /* Reset */
 *, *::before, *::after {
   box-sizing: border-box;
@@ -94,6 +129,7 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
+  transition: background var(--transition-normal), color var(--transition-normal);
 }
 
 a { color: var(--text-accent); text-decoration: none; transition: color var(--transition-fast); }
