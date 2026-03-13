@@ -5,7 +5,7 @@ import { authOptions } from '@/lib/auth';
 
 export async function PUT(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getServerSession(authOptions);
   if (!session || session.user.role !== 'superadmin') {
@@ -13,9 +13,10 @@ export async function PUT(
   }
 
   try {
+    const { id: idStr } = await params;
     const data = await req.json();
     const faculty = await prisma.faculty.update({
-      where: { id: parseInt(params.id) },
+      where: { id: parseInt(idStr) },
       data
     });
     return NextResponse.json(faculty);
@@ -26,7 +27,7 @@ export async function PUT(
 
 export async function DELETE(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getServerSession(authOptions);
   if (!session || session.user.role !== 'superadmin') {
@@ -34,9 +35,9 @@ export async function DELETE(
   }
 
   try {
-    const id = parseInt(params.id);
+    const { id: idStr } = await params;
+    const id = parseInt(idStr);
     
-    // Check for associated batches
     const batches = await prisma.batch.count({ where: { facultyId: id } });
     if (batches > 0) {
       return NextResponse.json({ 

@@ -5,7 +5,7 @@ import { authOptions } from '@/lib/auth';
 
 export async function PUT(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getServerSession(authOptions);
   if (!session || session.user.role !== 'superadmin') {
@@ -13,10 +13,10 @@ export async function PUT(
   }
 
   try {
+    const { id: idStr } = await params;
+    const roleId = parseInt(idStr);
     const { name, description, permissions } = await req.json();
-    const roleId = parseInt(params.id);
 
-    // Update role and replace permissions
     const role = await prisma.role.update({
       where: { id: roleId },
       data: {
@@ -37,7 +37,7 @@ export async function PUT(
 
 export async function DELETE(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getServerSession(authOptions);
   if (!session || session.user.role !== 'superadmin') {
@@ -45,9 +45,9 @@ export async function DELETE(
   }
 
   try {
-    const roleId = parseInt(params.id);
+    const { id: idStr } = await params;
+    const roleId = parseInt(idStr);
 
-    // Check if any users are assigned to this role
     const usersWithRole = await prisma.user.count({
       where: { roleId },
     });

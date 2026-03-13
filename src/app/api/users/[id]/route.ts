@@ -6,7 +6,7 @@ import { hash } from 'bcryptjs';
 
 export async function PUT(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getServerSession(authOptions);
   if (!session || session.user.role !== 'superadmin') {
@@ -14,8 +14,9 @@ export async function PUT(
   }
 
   try {
+    const { id: idStr } = await params;
+    const userId = parseInt(idStr);
     const { name, username, password, roleId, active } = await req.json();
-    const userId = parseInt(params.id);
 
     const data: any = {
       name,
@@ -43,7 +44,7 @@ export async function PUT(
 
 export async function DELETE(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getServerSession(authOptions);
   if (!session || session.user.role !== 'superadmin') {
@@ -51,9 +52,9 @@ export async function DELETE(
   }
 
   try {
-    const userId = parseInt(params.id);
+    const { id: idStr } = await params;
+    const userId = parseInt(idStr);
 
-    // Prevent self-deletion
     if (userId === parseInt(session.user.id)) {
       return NextResponse.json({ error: 'Cannot delete your own account' }, { status: 400 });
     }
