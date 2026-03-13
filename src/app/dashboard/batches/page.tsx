@@ -117,7 +117,7 @@ export default function BatchesPage() {
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                   <div style={{ 
-                    background: 'var(--primary-color)', 
+                    background: 'var(--brand-blue)', 
                     color: 'white', 
                     padding: '8px 12px', 
                     borderRadius: '8px',
@@ -164,7 +164,7 @@ export default function BatchesPage() {
                                     background: 'var(--bg-input)', 
                                     borderRadius: '6px',
                                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    color: 'var(--primary-color)'
+                                    color: 'var(--brand-blue)'
                                   }}>
                                     <FiBook />
                                   </div>
@@ -187,7 +187,7 @@ export default function BatchesPage() {
                                     <div style={{ 
                                       height: '100%', 
                                       width: `${Math.min(100, (enrolled / b.capacity) * 100)}%`,
-                                      background: isFull ? 'var(--danger)' : 'var(--primary-color)'
+                                      background: isFull ? 'var(--danger)' : 'var(--brand-blue)'
                                     }} />
                                   </div>
                                   <span style={{ 
