@@ -35,15 +35,61 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const course = await prisma.course.findUnique({ where: { id: body.courseId } });
-    const totalFee = course?.fee || 0;
+    if (!course) return NextResponse.json({ error: 'Course not found' }, { status: 404 });
+
+    const totalFee = course.fee || 0;
     const discount = body.discount || 0;
     const netFee = totalFee - discount;
 
+    let targetBatchId = body.batchId;
+
+    // Phase 7: Time-Based Batch logic
+    if (body.timeSlotId) {
+      const timeSlotId = parseInt(body.timeSlotId);
+      const courseId = parseInt(body.courseId);
+
+      // Find time slot
+      const timeSlot = await prisma.timeSlot.findUnique({ where: { id: timeSlotId } });
+      if (!timeSlot) return NextResponse.json({ error: 'Time slot not found' }, { status: 404 });
+
+      // Find existing batch for this course and time slot
+      let batch = await prisma.batch.findFirst({
+        where: { courseId, timeSlotId },
+        include: { _count: { select: { admissions: { where: { status: 'active' } } } } }
+      });
+
+      if (batch) {
+        // Enforce 20 seat limit constraints
+        if (batch._count.admissions >= 20) {
+          return NextResponse.json({ error: 'Batch Full — Please choose another time slot.' }, { status: 400 });
+        }
+        targetBatchId = batch.id;
+      } else {
+        // Auto-create batch
+        batch = await prisma.batch.create({
+          data: {
+            name: `${course.name} Batch`,
+            courseId,
+            timeSlotId,
+            capacity: 20,
+            timing: timeSlot.label,
+            status: 'active'
+          },
+          include: { _count: { select: { admissions: true } } }
+        });
+        targetBatchId = batch.id;
+      }
+    }
+
+    if (!targetBatchId) {
+      return NextResponse.json({ error: 'No batch or time slot provided' }, { status: 400 });
+    }
+
     const admission = await prisma.admission.create({
       data: {
-        studentId: body.studentId,
-        courseId: body.courseId,
-        batchId: body.batchId,
+        studentId: parseInt(body.studentId),
+        courseId: parseInt(body.courseId),
+        batchId: targetBatchId,
         admissionDate: body.admissionDate || new Date().toISOString().split('T')[0],
         totalFee,
         discount,
@@ -51,7 +97,7 @@ export async function POST(request: Request) {
         status: 'active',
         notes: body.notes || '',
       },
-      include: { student: true, course: true, batch: true },
+      include: { student: true, course: true, batch: { include: { timeSlot: true } } },
     });
 
     return NextResponse.json(admission, { status: 201 });

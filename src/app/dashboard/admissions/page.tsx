@@ -13,9 +13,9 @@ export default function AdmissionsPage() {
   const [editAdmission, setEditAdmission] = useState<any>(null);
   const [students, setStudents] = useState<any[]>([]);
   const [courses, setCourses] = useState<any[]>([]);
-  const [batches, setBatches] = useState<any[]>([]);
+  const [timeSlots, setTimeSlots] = useState<any[]>([]);
   const [toast, setToast] = useState<{ type: string; msg: string } | null>(null);
-  const [form, setForm] = useState({ studentId: 0, courseId: 0, batchId: 0, discount: 0, admissionDate: new Date().toISOString().split('T')[0], status: 'active', notes: '' });
+  const [form, setForm] = useState({ studentId: 0, courseId: 0, timeSlotId: 0, discount: 0, admissionDate: new Date().toISOString().split('T')[0], status: 'active', notes: '' });
   const [selectedCourseFee, setSelectedCourseFee] = useState(0);
 
   const fetchData = useCallback(async () => {
@@ -31,22 +31,22 @@ export default function AdmissionsPage() {
   const showToast = (type: string, msg: string) => { setToast({ type, msg }); setTimeout(() => setToast(null), 3000); };
 
   const openNewAdmission = async () => {
-    const [sRes, cRes, bRes] = await Promise.all([fetch('/api/students?limit=200'), fetch('/api/courses'), fetch('/api/batches')]);
-    const sData = await sRes.json(); setCourses(await cRes.json()); setBatches(await bRes.json());
+    const [sRes, cRes, tsRes] = await Promise.all([fetch('/api/students?limit=200'), fetch('/api/courses'), fetch('/api/timeslots')]);
+    const sData = await sRes.json(); setCourses(await cRes.json()); setTimeSlots(await tsRes.json());
     setStudents(sData.students || []);
-    setForm({ studentId: 0, courseId: 0, batchId: 0, discount: 0, admissionDate: new Date().toISOString().split('T')[0], status: 'active', notes: '' });
+    setForm({ studentId: 0, courseId: 0, timeSlotId: 0, discount: 0, admissionDate: new Date().toISOString().split('T')[0], status: 'active', notes: '' });
     setSelectedCourseFee(0); setEditAdmission(null); setShowModal(true);
   };
 
   const openEditAdmission = async (adm: any) => {
-    const [sRes, cRes, bRes] = await Promise.all([fetch('/api/students?limit=200'), fetch('/api/courses'), fetch('/api/batches')]);
-    const sData = await sRes.json(); setCourses(await cRes.json()); setBatches(await bRes.json());
+    const [sRes, cRes, tsRes] = await Promise.all([fetch('/api/students?limit=200'), fetch('/api/courses'), fetch('/api/timeslots')]);
+    const sData = await sRes.json(); setCourses(await cRes.json()); setTimeSlots(await tsRes.json());
     setStudents(sData.students || []);
     
     setForm({ 
       studentId: adm.studentId, 
       courseId: adm.courseId, 
-      batchId: adm.batchId, 
+      timeSlotId: adm.batch?.timeSlotId || 0, // Fallback if no timeslot on legacy
       discount: adm.discount, 
       admissionDate: adm.admissionDate, 
       status: adm.status,
@@ -58,7 +58,7 @@ export default function AdmissionsPage() {
   };
 
   const handleCourseChange = (courseId: number) => {
-    setForm({ ...form, courseId, batchId: 0 });
+    setForm({ ...form, courseId, timeSlotId: 0 });
     const course = courses.find((c: any) => c.id === courseId);
     setSelectedCourseFee(course?.fee || 0);
   };
@@ -70,7 +70,7 @@ export default function AdmissionsPage() {
     const res = await fetch(url, { 
       method, 
       headers: { 'Content-Type': 'application/json' }, 
-      body: JSON.stringify({ ...form, studentId: Number(form.studentId), courseId: Number(form.courseId), batchId: Number(form.batchId), discount: Number(form.discount) }) 
+      body: JSON.stringify({ ...form, studentId: Number(form.studentId), courseId: Number(form.courseId), timeSlotId: Number(form.timeSlotId), discount: Number(form.discount) }) 
     });
     if (res.ok) { showToast('success', editAdmission ? 'Admission updated!' : 'Admission created!'); setShowModal(false); setEditAdmission(null); fetchData(); }
     else showToast('error', 'Failed');
@@ -216,10 +216,10 @@ export default function AdmissionsPage() {
                       {courses.map((c: any) => <option key={c.id} value={c.id}>{c.name} - ₹{c.fee}</option>)}
                     </select>
                   </div>
-                  <div className="form-group"><label>Batch *</label>
-                    <select className="form-control" required value={form.batchId} onChange={e => setForm({ ...form, batchId: Number(e.target.value) })}>
-                      <option value="">Select Batch</option>
-                      {batches.filter((b: any) => b.courseId === form.courseId).map((b: any) => <option key={b.id} value={b.id}>{b.name} - {b.timing}</option>)}
+                  <div className="form-group"><label>Time Slot *</label>
+                    <select className="form-control" required value={form.timeSlotId} onChange={e => setForm({ ...form, timeSlotId: Number(e.target.value) })}>
+                      <option value="">Select Time Slot</option>
+                      {timeSlots.map((ts: any) => <option key={ts.id} value={ts.id}>{ts.label}</option>)}
                     </select>
                   </div>
                 </div>

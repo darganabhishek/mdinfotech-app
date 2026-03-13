@@ -120,9 +120,11 @@ model Batch {
   startDate  String      @default("")
   endDate    String      @default("")
   timing     String      @default("")
+  timeSlotId Int?
+  timeSlot   TimeSlot?   @relation(fields: [timeSlotId], references: [id])
   facultyId   Int?
   faculty    Faculty?    @relation(fields: [facultyId], references: [id])
-  capacity   Int         @default(30)
+  capacity   Int         @default(20)
   status     String      @default("active")
   createdAt  DateTime    @default(now())
   updatedAt  DateTime    @updatedAt
@@ -325,6 +327,16 @@ model TimetableSlot {
 
   @@unique([day, startTime, batchId])
   @@unique([day, startTime, facultyId])
+}
+
+model TimeSlot {
+  id        Int      @id @default(autoincrement())
+  startTime String   // "09:00"
+  endTime   String   // "10:00"
+  label     String   // "09:00 AM - 10:00 AM"
+  batches   Batch[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Resource {
