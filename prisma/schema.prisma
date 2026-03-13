@@ -147,6 +147,9 @@ model Admission {
   totalFee      Float         @default(0)
   discount      Float         @default(0)
   netFee        Float         @default(0)
+  paymentPlan   String        @default("monthly") // "full" or "monthly"
+  installmentAmount Float?
+  installmentsCount Int?
   status        String        @default("active")
   notes         String        @default("")
   createdAt     DateTime      @default(now())
@@ -162,6 +165,7 @@ model Payment {
   amount      Float
   paymentDate String
   paymentMode String    @default("cash")
+  paymentMonth String?  // e.g., "Jan 2026"
   receiptNo   String    @unique
   reference   String    @default("")
   notes       String    @default("")

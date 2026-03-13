@@ -33,6 +33,7 @@ const navItems = [
     { href: '/dashboard/security-alerts', label: 'Security Alerts', icon: FiShield },
   ]},
   { section: 'Finance', items: [
+    { href: '/dashboard/fees', label: 'Fee Management', icon: FiDollarSign },
     { href: '/dashboard/payments', label: 'Payments', icon: FiDollarSign },
     { href: '/dashboard/receipts', label: 'Receipts', icon: FiFileText },
     { href: '/dashboard/payroll', label: 'Payroll', icon: FiDollarSign },

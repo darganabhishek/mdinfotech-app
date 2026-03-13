@@ -15,7 +15,7 @@ export default function AdmissionsPage() {
   const [courses, setCourses] = useState<any[]>([]);
   const [timeSlots, setTimeSlots] = useState<any[]>([]);
   const [toast, setToast] = useState<{ type: string; msg: string } | null>(null);
-  const [form, setForm] = useState({ studentId: 0, courseId: 0, timeSlotId: 0, discount: 0, admissionDate: new Date().toISOString().split('T')[0], status: 'active', notes: '' });
+  const [form, setForm] = useState({ studentId: 0, courseId: 0, timeSlotId: 0, discount: 0, admissionDate: new Date().toISOString().split('T')[0], status: 'active', notes: '', paymentPlan: 'monthly', installmentAmount: '', installmentsCount: '' });
   const [selectedCourseFee, setSelectedCourseFee] = useState(0);
 
   const fetchData = useCallback(async () => {
@@ -34,7 +34,7 @@ export default function AdmissionsPage() {
     const [sRes, cRes, tsRes] = await Promise.all([fetch('/api/students?limit=200'), fetch('/api/courses'), fetch('/api/timeslots')]);
     const sData = await sRes.json(); setCourses(await cRes.json()); setTimeSlots(await tsRes.json());
     setStudents(sData.students || []);
-    setForm({ studentId: 0, courseId: 0, timeSlotId: 0, discount: 0, admissionDate: new Date().toISOString().split('T')[0], status: 'active', notes: '' });
+    setForm({ studentId: 0, courseId: 0, timeSlotId: 0, discount: 0, admissionDate: new Date().toISOString().split('T')[0], status: 'active', notes: '', paymentPlan: 'monthly', installmentAmount: '', installmentsCount: '' });
     setSelectedCourseFee(0); setEditAdmission(null); setShowModal(true);
   };
 
@@ -50,7 +50,10 @@ export default function AdmissionsPage() {
       discount: adm.discount, 
       admissionDate: adm.admissionDate, 
       status: adm.status,
-      notes: adm.notes || '' 
+      notes: adm.notes || '',
+      paymentPlan: adm.paymentPlan || 'monthly',
+      installmentAmount: adm.installmentAmount || '',
+      installmentsCount: adm.installmentsCount || ''
     });
     setSelectedCourseFee(adm.totalFee || 0);
     setEditAdmission(adm);
@@ -67,10 +70,19 @@ export default function AdmissionsPage() {
     e.preventDefault();
     const url = editAdmission ? `/api/admissions/${editAdmission.id}` : '/api/admissions';
     const method = editAdmission ? 'PUT' : 'POST';
+    const payload = { 
+      ...form, 
+      studentId: Number(form.studentId), 
+      courseId: Number(form.courseId), 
+      timeSlotId: Number(form.timeSlotId), 
+      discount: Number(form.discount),
+      installmentAmount: form.installmentAmount ? Number(form.installmentAmount) : null,
+      installmentsCount: form.installmentsCount ? Number(form.installmentsCount) : null
+    };
     const res = await fetch(url, { 
       method, 
       headers: { 'Content-Type': 'application/json' }, 
-      body: JSON.stringify({ ...form, studentId: Number(form.studentId), courseId: Number(form.courseId), timeSlotId: Number(form.timeSlotId), discount: Number(form.discount) }) 
+      body: JSON.stringify(payload) 
     });
     if (res.ok) { showToast('success', editAdmission ? 'Admission updated!' : 'Admission created!'); setShowModal(false); setEditAdmission(null); fetchData(); }
     else showToast('error', 'Failed');
@@ -236,10 +248,26 @@ export default function AdmissionsPage() {
                   </select>
                 </div>
                 {selectedCourseFee > 0 && (
-                  <div style={{ background: 'var(--bg-input)', borderRadius: 'var(--radius-md)', padding: 16, marginTop: 8 }}>
+                  <div style={{ background: 'var(--bg-input)', borderRadius: 'var(--radius-md)', padding: 16, marginTop: 8, marginBottom: 16 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}><span style={{ color: 'var(--text-muted)' }}>Course Fee</span><span>₹{selectedCourseFee.toLocaleString()}</span></div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}><span style={{ color: 'var(--text-muted)' }}>Discount</span><span style={{ color: 'var(--danger)' }}>-₹{(form.discount || 0).toLocaleString()}</span></div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid var(--border-color)', paddingTop: 8 }}><span style={{ fontWeight: 700 }}>Net Fee</span><span style={{ fontWeight: 800, fontSize: '1.2rem', color: 'var(--success)' }}>₹{(selectedCourseFee - (form.discount || 0)).toLocaleString()}</span></div>
+                  </div>
+                )}
+                
+                <h4 style={{ margin: '8px 0', fontSize: '1rem', color: 'var(--text-primary)' }}>Payment Details</h4>
+                <div className="form-group">
+                  <label>Payment Plan</label>
+                  <select className="form-control" value={form.paymentPlan} onChange={e => setForm({ ...form, paymentPlan: e.target.value })}>
+                    <option value="full">Full Payment</option>
+                    <option value="monthly">Monthly Installment</option>
+                  </select>
+                </div>
+                
+                {form.paymentPlan === 'monthly' && (
+                  <div className="form-row">
+                    <div className="form-group"><label>Monthly Installment (₹)</label><input className="form-control" type="number" required value={form.installmentAmount} onChange={e => setForm({ ...form, installmentAmount: e.target.value })} /></div>
+                    <div className="form-group"><label>Number of Months</label><input className="form-control" type="number" required value={form.installmentsCount} onChange={e => setForm({ ...form, installmentsCount: e.target.value })} /></div>
                   </div>
                 )}
                 <div className="form-group" style={{ marginTop: 16 }}><label>Notes</label><textarea className="form-control" value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} /></div>

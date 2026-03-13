@@ -44,6 +44,7 @@ export async function POST(request: Request) {
         amount: body.amount,
         paymentDate: body.paymentDate || new Date().toISOString().split('T')[0],
         paymentMode: body.paymentMode || 'cash',
+        paymentMonth: body.paymentMonth || null,
         receiptNo,
         reference: body.reference || '',
         notes: body.notes || '',

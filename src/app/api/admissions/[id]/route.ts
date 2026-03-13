@@ -44,6 +44,12 @@ export async function PUT(
       updatedData.discount = finalDiscount;
       updatedData.netFee = totalFee - finalDiscount;
     }
+    
+    if (body.paymentPlan !== undefined) {
+      updatedData.paymentPlan = body.paymentPlan;
+      updatedData.installmentAmount = body.installmentAmount ? Number(body.installmentAmount) : null;
+      updatedData.installmentsCount = body.installmentsCount ? Number(body.installmentsCount) : null;
+    }
 
     const admission = await prisma.admission.update({
       where: { id },
