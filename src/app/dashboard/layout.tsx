@@ -26,6 +26,12 @@ const navItems = [
     { href: '/dashboard/timetable', label: 'Timetable', icon: FiLayers },
     { href: '/dashboard/resources', label: 'Resources', icon: FiSettings },
   ]},
+  { section: 'Secure Attendance', items: [
+    { href: '/dashboard/attendance/session', label: 'Start QR Session', icon: FiActivity },
+    { href: '/dashboard/attendance/scan', label: 'Scan QR Code', icon: FiActivity },
+    { href: '/dashboard/attendance/clock', label: 'Faculty Clock', icon: FiActivity },
+    { href: '/dashboard/security-alerts', label: 'Security Alerts', icon: FiShield },
+  ]},
   { section: 'Finance', items: [
     { href: '/dashboard/payments', label: 'Payments', icon: FiDollarSign },
     { href: '/dashboard/receipts', label: 'Receipts', icon: FiFileText },

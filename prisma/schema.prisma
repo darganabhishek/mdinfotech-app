@@ -22,6 +22,8 @@ model User {
   faculty          Faculty?
   markedAttendances Attendance[]
   notifications    Notification[]
+  deviceRegistration DeviceRegistration?
+  securityAlerts   SecurityAlert[]
 }
 
 model Role {
@@ -61,6 +63,8 @@ model Faculty {
   assignments    Assignment[]
   resources      ElearningResource[]
   timetableSlots TimetableSlot[]
+  clockLogs      FacultyClockLog[]
+  sessions       AttendanceSession[]
 }
 
 model Student {
@@ -126,6 +130,7 @@ model Batch {
   attendances Attendance[]
   assignments Assignment[]
   timetableSlots TimetableSlot[]
+  sessions   AttendanceSession[]
 }
 
 model Admission {
@@ -225,18 +230,24 @@ model Settings {
 }
 
 model Attendance {
-  id          Int      @id @default(autoincrement())
-  date        String   // YYYY-MM-DD
-  status      String   // "present", "absent", "late"
-  studentId   Int
-  student     Student  @relation(fields: [studentId], references: [id])
-  batchId     Int
-  batch       Batch    @relation(fields: [batchId], references: [id])
-  markedById  Int
-  markedBy    User     @relation(fields: [markedById], references: [id])
-  notes       String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id                  Int               @id @default(autoincrement())
+  date                String            // YYYY-MM-DD
+  status              String            // "present", "absent", "late"
+  studentId           Int
+  student             Student           @relation(fields: [studentId], references: [id])
+  batchId             Int
+  batch               Batch             @relation(fields: [batchId], references: [id])
+  markedById          Int
+  markedBy            User              @relation(fields: [markedById], references: [id])
+  notes               String?
+  deviceFingerprint   String?
+  latitude            Float?
+  longitude           Float?
+  verificationMethod  String            @default("manual") // "manual", "qr", "qr+face"
+  sessionId           Int?
+  session             AttendanceSession? @relation(fields: [sessionId], references: [id])
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
 
   @@unique([date, studentId, batchId])
 }
@@ -328,4 +339,55 @@ model Resource {
   notes       String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+model DeviceRegistration {
+  id          Int      @id @default(autoincrement())
+  userId      Int      @unique
+  user        User     @relation(fields: [userId], references: [id])
+  fingerprint String
+  userAgent   String   @default("")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model AttendanceSession {
+  id          Int          @id @default(autoincrement())
+  batchId     Int
+  batch       Batch        @relation(fields: [batchId], references: [id])
+  facultyId   Int
+  faculty     Faculty      @relation(fields: [facultyId], references: [id])
+  qrSecret    String       @unique
+  startTime   DateTime     @default(now())
+  endTime     DateTime?
+  latitude    Float        @default(0)
+  longitude   Float        @default(0)
+  radius      Int          @default(100)
+  active      Boolean      @default(true)
+  attendances Attendance[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+model SecurityAlert {
+  id        Int      @id @default(autoincrement())
+  userId    Int?
+  user      User?    @relation(fields: [userId], references: [id])
+  type      String   // "duplicate_device", "gps_spoof", "outside_radius", "failed_attempt"
+  message   String
+  details   String   @default("")
+  resolved  Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model FacultyClockLog {
+  id          Int      @id @default(autoincrement())
+  facultyId   Int
+  faculty     Faculty  @relation(fields: [facultyId], references: [id])
+  clockIn     DateTime
+  clockOut    DateTime?
+  totalHours  Float?
+  latitude    Float?
+  longitude   Float?
+  createdAt   DateTime @default(now())
 }
