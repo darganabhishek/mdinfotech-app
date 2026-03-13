@@ -2,9 +2,22 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { TOTP } from 'otplib';
+import crypto from 'crypto';
 
-const totp = new TOTP({ step: 30, window: 1 });
+function generateToken(secret: string): string {
+  const timeSlot = Math.floor(Date.now() / 30000);
+  return crypto.createHmac('sha256', secret).update(String(timeSlot)).digest('hex').substring(0, 8);
+}
+
+function verifyToken(token: string, secret: string): boolean {
+  const currentSlot = Math.floor(Date.now() / 30000);
+  // Check current and previous slot (60s window)
+  for (let i = 0; i <= 1; i++) {
+    const expected = crypto.createHmac('sha256', secret).update(String(currentSlot - i)).digest('hex').substring(0, 8);
+    if (token === expected) return true;
+  }
+  return false;
+}
 
 function getDistanceMeters(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371e3;
@@ -35,8 +48,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Session is no longer active' }, { status: 400 });
     }
 
-    // 2. Verify TOTP token
-    const isValidToken = totp.check(token, attSession.qrSecret);
+    // 2. Verify HMAC token
+    const isValidToken = verifyToken(token, attSession.qrSecret);
     if (!isValidToken) {
       await prisma.securityAlert.create({
         data: { userId, type: 'failed_attempt', message: 'Invalid QR code scanned', details: `Session ${sessionId}` },
