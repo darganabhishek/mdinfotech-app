@@ -38,16 +38,28 @@ export async function DELETE(
     const { id: idStr } = await params;
     const id = parseInt(idStr);
     
-    const batches = await prisma.batch.count({ where: { facultyId: id } });
-    if (batches > 0) {
+    // First check if they have active batches
+    const activeBatches = await prisma.batch.count({ 
+      where: { facultyId: id, status: 'active' } 
+    });
+    
+    if (activeBatches > 0) {
       return NextResponse.json({ 
-        error: 'Cannot delete faculty assigned to active batches.' 
+        error: 'Cannot delete faculty assigned to active batches. Reassign the batches first.' 
       }, { status: 400 });
     }
 
-    await prisma.faculty.delete({ where: { id } });
-    return NextResponse.json({ message: 'Faculty deleted' });
+    try {
+      // Try hard delete first
+      await prisma.faculty.delete({ where: { id } });
+      return NextResponse.json({ message: 'Faculty permanently deleted' });
+    } catch (e: any) {
+      // If foreign key constraint fails (they have past assignments, attendances, etc), do a soft delete
+      await prisma.faculty.update({ where: { id }, data: { active: false } });
+      return NextResponse.json({ message: 'Faculty deactivated (retained for historical records)' });
+    }
   } catch (error) {
     return NextResponse.json({ error: 'Failed to delete faculty' }, { status: 500 });
   }
 }
+

@@ -113,6 +113,23 @@ export default function FacultyPage() {
     }
   };
 
+  const handleDelete = async (id: number) => {
+    if (!confirm('Are you sure you want to delete this faculty member?')) return;
+    
+    try {
+      const res = await fetch(`/api/faculty/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        toast.success('Faculty deleted successfully');
+        fetchData();
+      } else {
+        const err = await res.json();
+        toast.error(err.error || 'Failed to delete faculty');
+      }
+    } catch (error) {
+      toast.error('Network error while deleting');
+    }
+  };
+
   if (loading) return <div>Loading...</div>;
 
   return (
@@ -186,8 +203,11 @@ export default function FacultyPage() {
                   </td>
                   <td>
                     <div className="page-actions">
-                      <button className="btn btn-sm btn-outline btn-icon" onClick={() => handleOpenModal(f)}>
+                      <button className="btn btn-sm btn-outline btn-icon" onClick={() => handleOpenModal(f)} title="Edit Faculty">
                         <FiEdit2 />
+                      </button>
+                      <button className="btn btn-sm btn-outline btn-icon" onClick={() => handleDelete(f.id)} style={{ color: 'var(--danger)' }} title="Delete Faculty">
+                        <FiTrash2 />
                       </button>
                     </div>
                   </td>
