@@ -1,0 +1,155 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String
+  username  String   @unique
+  password  String
+  role      String   @default("staff")
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  auditLogs AuditLog[]
+}
+
+model Student {
+  id           Int         @id @default(autoincrement())
+  enrollmentNo String      @unique
+  name         String
+  fatherName   String      @default("")
+  motherName   String      @default("")
+  phone        String      @default("")
+  email        String      @default("")
+  address      String      @default("")
+  city         String      @default("")
+  state        String      @default("")
+  pincode      String      @default("")
+  dob          String      @default("")
+  gender       String      @default("")
+  qualification String     @default("")
+  photo        String      @default("")
+  aadhaarNo    String      @default("")
+  prevKnowledge String     @default("")
+  status       String      @default("active")
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  admissions   Admission[]
+}
+
+model Course {
+  id           Int         @id @default(autoincrement())
+  name         String
+  code         String      @unique
+  duration     Int         @default(3)
+  durationUnit String      @default("months")
+  fee          Float       @default(0)
+  description  String      @default("")
+  active       Boolean     @default(true)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  batches      Batch[]
+  admissions   Admission[]
+}
+
+model Batch {
+  id         Int         @id @default(autoincrement())
+  name       String
+  courseId    Int
+  course     Course      @relation(fields: [courseId], references: [id])
+  startDate  String      @default("")
+  endDate    String      @default("")
+  timing     String      @default("")
+  instructor String      @default("")
+  capacity   Int         @default(30)
+  status     String      @default("active")
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  admissions Admission[]
+}
+
+model Admission {
+  id            Int           @id @default(autoincrement())
+  studentId     Int
+  student       Student       @relation(fields: [studentId], references: [id])
+  courseId       Int
+  course        Course        @relation(fields: [courseId], references: [id])
+  batchId       Int
+  batch         Batch         @relation(fields: [batchId], references: [id])
+  admissionDate String
+  totalFee      Float         @default(0)
+  discount      Float         @default(0)
+  netFee        Float         @default(0)
+  status        String        @default("active")
+  notes         String        @default("")
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  payments      Payment[]
+  certificates  Certificate[]
+}
+
+model Payment {
+  id          Int       @id @default(autoincrement())
+  admissionId Int
+  admission   Admission @relation(fields: [admissionId], references: [id])
+  amount      Float
+  paymentDate String
+  paymentMode String    @default("cash")
+  receiptNo   String    @unique
+  reference   String    @default("")
+  notes       String    @default("")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Enquiry {
+  id              Int      @id @default(autoincrement())
+  name            String
+  phone           String   @default("")
+  email           String   @default("")
+  courseInterested String   @default("")
+  source          String   @default("walk-in")
+  followUpDate    String   @default("")
+  status          String   @default("new")
+  notes           String   @default("")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Certificate {
+  id            Int       @id @default(autoincrement())
+  admissionId   Int
+  admission     Admission @relation(fields: [admissionId], references: [id])
+  certificateNo String    @unique
+  issueDate     String
+  grade         String    @default("")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model AuditLog {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  action    String
+  entity    String
+  entityId  Int      @default(0)
+  details   String   @default("")
+  createdAt DateTime @default(now())
+}
+
+model Settings {
+  id            Int      @id @default(1)
+  instituteName String   @default("M.D. INFOTECH")
+  tagline       String   @default("Professional Computer Institute")
+  address       String   @default("123 Tech Lane, Digital City, 54321")
+  phone         String   @default("+91 9716161624")
+  email         String   @default("itmdinfotech@gmail.com")
+  updatedAt     DateTime @updatedAt
+}
