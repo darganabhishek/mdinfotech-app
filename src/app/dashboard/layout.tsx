@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { signOut, useSession } from 'next-auth/react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   FiHome, FiUsers, FiBook, FiLayers, FiUserPlus, FiDollarSign,
   FiFileText, FiMessageSquare, FiBarChart2, FiSettings, FiLogOut,
@@ -14,44 +14,44 @@ import { useTheme } from '@/context/ThemeContext';
 
 const navItems = [
   { section: 'Main', items: [
-    { href: '/dashboard', label: 'Dashboard', icon: FiHome },
+    { href: '/dashboard', label: 'Dashboard', icon: FiHome, permissions: ['student_portal', 'teacher_portal', 'manage_settings', 'view_reports', 'manage_students'] }, // Basically everyone should see this, but data varies
   ]},
   { section: 'Management', items: [
-    { href: '/dashboard/students', label: 'Students', icon: FiUsers },
-    { href: '/dashboard/courses', label: 'Courses', icon: FiBook },
-    { href: '/dashboard/batches', label: 'Batches', icon: FiLayers },
-    { href: '/dashboard/admissions', label: 'Admissions', icon: FiUserPlus },
-    { href: '/dashboard/faculty', label: 'Faculty Management', icon: FiUsers },
-    { href: '/dashboard/attendance', label: 'Attendance Hub', icon: FiActivity },
-    { href: '/dashboard/timetable', label: 'Timetable', icon: FiLayers },
-    { href: '/dashboard/resources', label: 'Resources', icon: FiSettings },
+    { href: '/dashboard/students', label: 'Students', icon: FiUsers, permissions: ['manage_students'] },
+    { href: '/dashboard/courses', label: 'Courses', icon: FiBook, permissions: ['manage_courses'] },
+    { href: '/dashboard/batches', label: 'Batches', icon: FiLayers, permissions: ['manage_batches'] },
+    { href: '/dashboard/admissions', label: 'Admissions', icon: FiUserPlus, permissions: ['manage_admissions'] },
+    { href: '/dashboard/faculty', label: 'Faculty Management', icon: FiUsers, permissions: ['manage_users'] },
+    { href: '/dashboard/attendance', label: 'Attendance Hub', icon: FiActivity, permissions: ['manage_students', 'teacher_portal'] },
+    { href: '/dashboard/timetable', label: 'Timetable', icon: FiLayers, permissions: ['manage_batches', 'teacher_portal'] },
+    { href: '/dashboard/resources', label: 'Resources', icon: FiSettings, permissions: ['manage_settings'] },
   ]},
   { section: 'Secure Attendance', items: [
-    { href: '/dashboard/attendance/session', label: 'Start QR Session', icon: FiActivity },
-    { href: '/dashboard/attendance/scan', label: 'Scan QR Code', icon: FiActivity },
-    { href: '/dashboard/attendance/clock', label: 'Faculty Clock', icon: FiActivity },
-    { href: '/dashboard/security-alerts', label: 'Security Alerts', icon: FiShield },
+    { href: '/dashboard/attendance/session', label: 'Start QR Session', icon: FiActivity, permissions: ['teacher_portal', 'manage_students'] },
+    { href: '/dashboard/attendance/scan', label: 'Scan QR Code', icon: FiActivity, permissions: ['teacher_portal', 'manage_students'] },
+    { href: '/dashboard/attendance/clock', label: 'Faculty Clock', icon: FiActivity, permissions: ['teacher_portal'] },
+    { href: '/dashboard/security-alerts', label: 'Security Alerts', icon: FiShield, permissions: ['manage_settings'] },
   ]},
   { section: 'Finance', items: [
-    { href: '/dashboard/fees', label: 'Fee Management', icon: FiDollarSign },
-    { href: '/dashboard/payments', label: 'Payments', icon: FiDollarSign },
-    { href: '/dashboard/receipts', label: 'Receipts', icon: FiFileText },
-    { href: '/dashboard/payroll', label: 'Payroll', icon: FiDollarSign },
-    { href: '/dashboard/analytics', label: 'Course Analytics', icon: FiBarChart2 },
-    { href: '/dashboard/referrals', label: 'Referral Program', icon: FiUserPlus },
+    { href: '/dashboard/fees', label: 'Fee Management', icon: FiDollarSign, permissions: ['manage_payments'] },
+    { href: '/dashboard/payments', label: 'Payments', icon: FiDollarSign, permissions: ['manage_payments'] },
+    { href: '/dashboard/receipts', label: 'Receipts', icon: FiFileText, permissions: ['manage_payments'] },
+    { href: '/dashboard/payroll', label: 'Payroll', icon: FiDollarSign, permissions: ['manage_payments', 'manage_users'] },
+    { href: '/dashboard/analytics', label: 'Course Analytics', icon: FiBarChart2, permissions: ['view_reports'] },
+    { href: '/dashboard/referrals', label: 'Referral Program', icon: FiUserPlus, permissions: ['manage_admissions'] },
   ]},
   { section: 'Academics', items: [
-    { href: '/dashboard/student', label: 'Student Portal', icon: FiBook },
-    { href: '/dashboard/elearning', label: 'E-learning Hub', icon: FiFileText },
+    { href: '/dashboard/student', label: 'Student Portal', icon: FiBook, permissions: ['student_portal'] },
+    { href: '/dashboard/elearning', label: 'E-learning Hub', icon: FiFileText, permissions: ['teacher_portal', 'student_portal', 'manage_courses'] },
   ]},
   { section: 'Other', items: [
-    { href: '/dashboard/enquiries', label: 'Enquiries', icon: FiMessageSquare },
-    { href: '/dashboard/certificates', label: 'Certificates', icon: FiAward },
-    { href: '/dashboard/reports', label: 'Reports', icon: FiBarChart2 },
-    { href: '/dashboard/settings', label: 'Settings', icon: FiSettings },
-    { href: '/dashboard/users', label: 'User Accounts', icon: FiUsers },
-    { href: '/dashboard/settings/roles', label: 'Role Management', icon: FiShield },
-    { href: '/dashboard/logs', label: 'Audit Logs', icon: FiActivity },
+    { href: '/dashboard/enquiries', label: 'Enquiries', icon: FiMessageSquare, permissions: ['manage_admissions'] },
+    { href: '/dashboard/certificates', label: 'Certificates', icon: FiAward, permissions: ['manage_students'] },
+    { href: '/dashboard/reports', label: 'Reports', icon: FiBarChart2, permissions: ['view_reports'] },
+    { href: '/dashboard/settings', label: 'Settings', icon: FiSettings, permissions: ['manage_settings'] },
+    { href: '/dashboard/users', label: 'User Accounts', icon: FiUsers, permissions: ['manage_users'] },
+    { href: '/dashboard/settings/roles', label: 'Role Management', icon: FiShield, permissions: ['manage_settings'] },
+    { href: '/dashboard/logs', label: 'Audit Logs', icon: FiActivity, permissions: ['manage_settings'] },
   ]},
 ];
 
@@ -60,6 +60,35 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
   const { data: session } = useSession();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { theme, toggleTheme } = useTheme();
+
+  const [dbRole, setDbRole] = useState<string | null>(null);
+  const [dbPermissions, setDbPermissions] = useState<string[] | null>(null);
+
+  useEffect(() => {
+    if (session?.user) {
+      fetch('/api/users/me/permissions')
+        .then(res => res.json())
+        .then(data => {
+          if (data.role) setDbRole(data.role);
+          if (data.permissions) setDbPermissions(data.permissions);
+        })
+        .catch(console.error);
+    }
+  }, [session]);
+
+  const userRole = dbRole || (session?.user as any)?.role || 'staff';
+  const userPermissions = dbPermissions || (session?.user as any)?.permissions || [];
+
+  const hasPermission = (permissions?: string[]) => {
+    if (userRole === 'admin' || userRole === 'superadmin') return true;
+    if (!permissions || permissions.length === 0) return true;
+    return permissions.some(p => userPermissions.includes(p));
+  };
+
+  const filteredNavItems = navItems.map(section => ({
+    ...section,
+    items: section.items.filter(item => item.href === '/dashboard' || hasPermission(item.permissions))
+  })).filter(section => section.items.length > 0);
 
   const getPageTitle = () => {
     for (const section of navItems) {
@@ -87,7 +116,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
         </div>
 
         <nav className="sidebar-nav">
-          {navItems.map((section) => (
+          {filteredNavItems.map((section) => (
             <div className="sidebar-section" key={section.section}>
               <div className="sidebar-section-title">{section.section}</div>
               {section.items.map((item) => (
