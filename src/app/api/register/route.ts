@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { generateEnrollmentNo } from '@/lib/student';
 
 export async function POST(request: Request) {
   try {
@@ -23,8 +24,7 @@ export async function POST(request: Request) {
     }
 
     // 1. Generate enrollment number
-    const count = await prisma.student.count();
-    const enrollmentNo = `MDI${new Date().getFullYear()}${String(count + 1).padStart(4, '0')}`;
+    const enrollmentNo = await generateEnrollmentNo();
 
     // 2. Create Student
     const student = await prisma.student.create({

@@ -8,221 +8,221 @@ datasource db {
 }
 
 model User {
-  id               Int            @id @default(autoincrement())
-  name             String
-  username         String         @unique
-  password         String
-  roleId           Int?
-  role             Role?          @relation(fields: [roleId], references: [id])
-  active           Boolean        @default(true)
-  createdAt        DateTime       @default(now())
-  updatedAt        DateTime       @updatedAt
-  auditLogs        AuditLog[]
-  student          Student?
-  faculty          Faculty?
-  markedAttendances Attendance[]
-  notifications    Notification[]
+  id                 Int                 @id @default(autoincrement())
+  name               String
+  username           String              @unique
+  password           String
+  active             Boolean             @default(true)
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  roleId             Int?
+  markedAttendances  Attendance[]
+  auditLogs          AuditLog[]
   deviceRegistration DeviceRegistration?
-  securityAlerts   SecurityAlert[]
+  faculty            Faculty?
+  notifications      Notification[]
+  securityAlerts     SecurityAlert[]
+  student            Student?
+  role               Role?               @relation(fields: [roleId], references: [id])
 }
 
 model Role {
   id          Int          @id @default(autoincrement())
   name        String       @unique
   description String?
-  permissions Permission[]
-  users       User[]
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
+  users       User[]
+  permissions Permission[] @relation("PermissionToRole")
 }
 
 model Permission {
   id          Int      @id @default(autoincrement())
-  name        String   @unique // e.g., "manage_students", "view_reports"
+  name        String   @unique
   description String?
-  roles       Role[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  roles       Role[]   @relation("PermissionToRole")
 }
 
 model Faculty {
-  id             Int       @id @default(autoincrement())
-  userId         Int?      @unique
-  user           User?     @relation(fields: [userId], references: [id])
+  id             Int                 @id @default(autoincrement())
+  userId         Int?                @unique
   name           String
-  email          String    @default("")
-  phone          String    @default("")
-  qualification  String    @default("")
-  specialization String    @default("") // Subjects/Courses taught
+  email          String              @default("")
+  phone          String              @default("")
+  qualification  String              @default("")
+  specialization String              @default("")
   joiningDate    String?
-  salary         Float     @default(0)
-  active         Boolean   @default(true)
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-  batches        Batch[]
+  salary         Float               @default(0)
+  active         Boolean             @default(true)
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
   assignments    Assignment[]
-  resources      ElearningResource[]
-  timetableSlots TimetableSlot[]
-  clockLogs      FacultyClockLog[]
   sessions       AttendanceSession[]
+  batches        Batch[]
+  resources      ElearningResource[]
+  user           User?               @relation(fields: [userId], references: [id])
+  clockLogs      FacultyClockLog[]
+  timetableSlots TimetableSlot[]
 }
 
 model Student {
-  id           Int         @id @default(autoincrement())
-  userId       Int?        @unique
-  user         User?       @relation(fields: [userId], references: [id])
-  enrollmentNo String      @unique
-  name         String
-  fatherName   String      @default("")
-  motherName   String      @default("")
-  phone        String      @default("")
-  email        String      @default("")
-  address      String      @default("")
-  city         String      @default("")
-  state        String      @default("")
-  pincode      String      @default("")
-  dob          String      @default("")
-  gender       String      @default("")
-  qualification String     @default("")
-  photo        String      @default("")
-  aadhaarNo    String      @default("")
-  prevKnowledge String     @default("")
-  status       String      @default("active")
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
-  admissions   Admission[]
-  attendances  Attendance[]
-  submissions  Submission[]
-  referrals    Referral[]   @relation("Referrer")
+  id            Int          @id @default(autoincrement())
+  enrollmentNo  String       @unique
+  name          String
+  fatherName    String       @default("")
+  motherName    String       @default("")
+  phone         String       @default("")
+  email         String       @default("")
+  address       String       @default("")
+  city          String       @default("")
+  state         String       @default("")
+  pincode       String       @default("")
+  dob           String       @default("")
+  gender        String       @default("")
+  qualification String       @default("")
+  photo         String       @default("")
+  aadhaarNo     String       @default("")
+  prevKnowledge String       @default("")
+  status        String       @default("active")
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  userId        Int?         @unique
+  admissions    Admission[]
+  attendances   Attendance[]
+  referrals     Referral[]   @relation("Referrer")
+  user          User?        @relation(fields: [userId], references: [id])
+  submissions   Submission[]
 }
 
 model Course {
-  id           Int         @id @default(autoincrement())
+  id           Int                 @id @default(autoincrement())
   name         String
-  code         String      @unique
-  duration     Int         @default(3)
-  durationUnit String      @default("months")
-  fee          Float       @default(0)
-  description  String      @default("")
-  active       Boolean     @default(true)
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
-  batches      Batch[]
+  code         String              @unique
+  duration     Int                 @default(3)
+  durationUnit String              @default("months")
+  fee          Float               @default(0)
+  description  String              @default("")
+  active       Boolean             @default(true)
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
   admissions   Admission[]
+  batches      Batch[]
   resources    ElearningResource[]
 }
 
 model Batch {
-  id         Int         @id @default(autoincrement())
-  name       String
-  courseId    Int
-  course     Course      @relation(fields: [courseId], references: [id])
-  startDate  String      @default("")
-  endDate    String      @default("")
-  timing     String      @default("")
-  timeSlotId Int?
-  timeSlot   TimeSlot?   @relation(fields: [timeSlotId], references: [id])
-  facultyId   Int?
-  faculty    Faculty?    @relation(fields: [facultyId], references: [id])
-  capacity   Int         @default(20)
-  status     String      @default("active")
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @updatedAt
-  admissions Admission[]
-  attendances Attendance[]
-  assignments Assignment[]
+  id             Int                 @id @default(autoincrement())
+  name           String
+  courseId       Int
+  startDate      String              @default("")
+  endDate        String              @default("")
+  timing         String              @default("")
+  capacity       Int                 @default(20)
+  status         String              @default("active")
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+  facultyId      Int?
+  timeSlotId     Int?
+  admissions     Admission[]
+  assignments    Assignment[]
+  attendances    Attendance[]
+  sessions       AttendanceSession[]
+  course         Course              @relation(fields: [courseId], references: [id])
+  faculty        Faculty?            @relation(fields: [facultyId], references: [id])
+  timeSlot       TimeSlot?           @relation(fields: [timeSlotId], references: [id])
   timetableSlots TimetableSlot[]
-  sessions   AttendanceSession[]
 }
 
 model Admission {
-  id            Int           @id @default(autoincrement())
-  studentId     Int
-  student       Student       @relation(fields: [studentId], references: [id])
-  courseId       Int
-  course        Course        @relation(fields: [courseId], references: [id])
-  batchId       Int?
-  batch         Batch?        @relation(fields: [batchId], references: [id])
-  admissionDate String
-  totalFee      Float         @default(0)
-  discount      Float         @default(0)
-  netFee        Float         @default(0)
-  paymentPlan   String        @default("monthly") // "full" or "monthly"
+  id                Int           @id @default(autoincrement())
+  studentId         Int
+  courseId          Int
+  batchId           Int?
+  admissionDate     String
+  totalFee          Float         @default(0)
+  discount          Float         @default(0)
+  netFee            Float         @default(0)
+  status            String        @default("active")
+  notes             String        @default("")
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
   installmentAmount Float?
   installmentsCount Int?
-  status        String        @default("active")
-  notes         String        @default("")
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
-  payments      Payment[]
-  certificates  Certificate[]
+  paymentPlan       String        @default("monthly")
+  batch             Batch?        @relation(fields: [batchId], references: [id])
+  course            Course        @relation(fields: [courseId], references: [id])
+  student           Student       @relation(fields: [studentId], references: [id])
+  certificates      Certificate[]
+  payments          Payment[]
 }
 
 model Payment {
-  id          Int       @id @default(autoincrement())
-  admissionId Int
-  admission   Admission @relation(fields: [admissionId], references: [id])
-  amount      Float
-  paymentDate String
-  paymentMode String    @default("cash")
-  paymentMonth String?  // e.g., "Jan 2026"
-  receiptNo   String    @unique
-  reference   String    @default("")
-  notes       String    @default("")
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id           Int       @id @default(autoincrement())
+  admissionId  Int
+  amount       Float
+  paymentDate  String
+  paymentMode  String    @default("cash")
+  receiptNo    String    @unique
+  reference    String    @default("")
+  notes        String    @default("")
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  paymentMonth String?
+  admission    Admission @relation(fields: [admissionId], references: [id])
 }
 
 model Enquiry {
-  id              Int      @id @default(autoincrement())
-  name            String
-  phone           String   @default("")
-  email           String   @default("")
+  id               Int      @id @default(autoincrement())
+  name             String
+  phone            String   @default("")
+  email            String   @default("")
   courseInterested String   @default("")
-  source          String   @default("walk-in")
-  followUpDate    String   @default("")
-  status          String   @default("new")
-  notes           String   @default("")
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  source           String   @default("walk-in")
+  followUpDate     String   @default("")
+  status           String   @default("new")
+  notes            String   @default("")
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 }
 
 model Certificate {
   id            Int       @id @default(autoincrement())
   admissionId   Int
-  admission     Admission @relation(fields: [admissionId], references: [id])
   certificateNo String    @unique
   issueDate     String
   grade         String    @default("")
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+  admission     Admission @relation(fields: [admissionId], references: [id])
 }
 
 model AuditLog {
   id        Int      @id @default(autoincrement())
   userId    Int
-  user      User     @relation(fields: [userId], references: [id])
   action    String
   entity    String
   entityId  Int      @default(0)
   details   String   @default("")
   createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
 }
 
 model Referral {
-  id              Int      @id @default(autoincrement())
+  id                Int      @id @default(autoincrement())
   referrerStudentId Int
-  referrerStudent Student  @relation("Referrer", fields: [referrerStudentId], references: [id])
-  referredName    String
-  referredPhone   String   @default("")
-  referredEmail   String   @default("")
-  courseInterested String  @default("")
-  status          String   @default("pending") // "pending", "enrolled", "rewarded"
-  rewardAmount    Float    @default(0)
-  rewardPaid      Boolean  @default(false)
-  notes           String   @default("")
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  referredName      String
+  referredPhone     String   @default("")
+  referredEmail     String   @default("")
+  courseInterested  String   @default("")
+  status            String   @default("pending")
+  rewardAmount      Float    @default(0)
+  rewardPaid        Boolean  @default(false)
+  notes             String   @default("")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  referrerStudent   Student  @relation("Referrer", fields: [referrerStudentId], references: [id])
 }
 
 model Settings {
@@ -236,24 +236,24 @@ model Settings {
 }
 
 model Attendance {
-  id                  Int               @id @default(autoincrement())
-  date                String            // YYYY-MM-DD
-  status              String            // "present", "absent", "late"
-  studentId           Int
-  student             Student           @relation(fields: [studentId], references: [id])
-  batchId             Int
-  batch               Batch             @relation(fields: [batchId], references: [id])
-  markedById          Int
-  markedBy            User              @relation(fields: [markedById], references: [id])
-  notes               String?
-  deviceFingerprint   String?
-  latitude            Float?
-  longitude           Float?
-  verificationMethod  String            @default("manual") // "manual", "qr", "qr+face"
-  sessionId           Int?
-  session             AttendanceSession? @relation(fields: [sessionId], references: [id])
-  createdAt           DateTime          @default(now())
-  updatedAt           DateTime          @updatedAt
+  id                 Int                @id @default(autoincrement())
+  date               String
+  status             String
+  studentId          Int
+  batchId            Int
+  markedById         Int
+  notes              String?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  deviceFingerprint  String?
+  latitude           Float?
+  longitude          Float?
+  sessionId          Int?
+  verificationMethod String             @default("manual")
+  batch              Batch              @relation(fields: [batchId], references: [id])
+  markedBy           User               @relation(fields: [markedById], references: [id])
+  session            AttendanceSession? @relation(fields: [sessionId], references: [id])
+  student            Student            @relation(fields: [studentId], references: [id])
 
   @@unique([date, studentId, batchId])
 }
@@ -264,27 +264,27 @@ model Assignment {
   description String
   dueDate     String
   batchId     Int
-  batch       Batch        @relation(fields: [batchId], references: [id])
   facultyId   Int
-  faculty     Faculty      @relation(fields: [facultyId], references: [id])
-  attachments String?      // JSON string of file URLs
-  submissions Submission[]
+  attachments String?
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
+  batch       Batch        @relation(fields: [batchId], references: [id])
+  faculty     Faculty      @relation(fields: [facultyId], references: [id])
+  submissions Submission[]
 }
 
 model Submission {
   id           Int        @id @default(autoincrement())
-  assignmentId  Int
-  assignment    Assignment @relation(fields: [assignmentId], references: [id])
-  studentId     Int
-  student       Student    @relation(fields: [studentId], references: [id])
-  content       String?    // Text submission
-  fileUrl       String?    // Uploaded file
-  grade         String?
-  feedback      String?
-  submittedAt   DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
+  assignmentId Int
+  studentId    Int
+  content      String?
+  fileUrl      String?
+  grade        String?
+  feedback     String?
+  submittedAt  DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  assignment   Assignment @relation(fields: [assignmentId], references: [id])
+  student      Student    @relation(fields: [studentId], references: [id])
 
   @@unique([assignmentId, studentId])
 }
@@ -293,41 +293,41 @@ model ElearningResource {
   id          Int      @id @default(autoincrement())
   title       String
   description String?
-  type        String   // "video", "pdf", "link", "doc"
+  type        String
   url         String
   courseId    Int?
-  course      Course?  @relation(fields: [courseId], references: [id])
   facultyId   Int?
-  faculty     Faculty? @relation(fields: [facultyId], references: [id])
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  course      Course?  @relation(fields: [courseId], references: [id])
+  faculty     Faculty? @relation(fields: [facultyId], references: [id])
 }
 
 model Notification {
-  id          Int      @id @default(autoincrement())
-  userId      Int
-  user        User     @relation(fields: [userId], references: [id])
-  title       String
-  message     String
-  type        String   // "info", "warning", "success", "error"
-  isRead      Boolean  @default(false)
-  link        String?
-  createdAt   DateTime @default(now())
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  title     String
+  message   String
+  type      String
+  isRead    Boolean  @default(false)
+  link      String?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
 }
 
 model TimetableSlot {
-  id          Int      @id @default(autoincrement())
-  day         String   // "Monday", "Tuesday", etc.
-  startTime   String   // "09:00"
-  endTime     String   // "10:30"
-  subject     String
-  room        String   @default("")
-  batchId     Int
-  batch       Batch    @relation(fields: [batchId], references: [id])
-  facultyId   Int
-  faculty     Faculty  @relation(fields: [facultyId], references: [id])
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        Int      @id @default(autoincrement())
+  day       String
+  startTime String
+  endTime   String
+  subject   String
+  room      String   @default("")
+  batchId   Int
+  facultyId Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  batch     Batch    @relation(fields: [batchId], references: [id])
+  faculty   Faculty  @relation(fields: [facultyId], references: [id])
 
   @@unique([day, startTime, batchId])
   @@unique([day, startTime, facultyId])
@@ -335,23 +335,23 @@ model TimetableSlot {
 
 model TimeSlot {
   id        Int      @id @default(autoincrement())
-  startTime String   // "09:00"
-  endTime   String   // "10:00"
-  label     String   // "09:00 AM - 10:00 AM"
-  batches   Batch[]
+  startTime String
+  endTime   String
+  label     String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  batches   Batch[]
 }
 
 model Resource {
   id          Int      @id @default(autoincrement())
   name        String
-  category    String   // "lab_computer", "software_license", "projector", "room"
+  category    String
   description String?
   quantity    Int      @default(1)
   available   Int      @default(1)
   location    String   @default("")
-  status      String   @default("available") // "available", "in_use", "maintenance"
+  status      String   @default("available")
   notes       String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -360,19 +360,17 @@ model Resource {
 model DeviceRegistration {
   id          Int      @id @default(autoincrement())
   userId      Int      @unique
-  user        User     @relation(fields: [userId], references: [id])
   fingerprint String
   userAgent   String   @default("")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  user        User     @relation(fields: [userId], references: [id])
 }
 
 model AttendanceSession {
   id          Int          @id @default(autoincrement())
   batchId     Int
-  batch       Batch        @relation(fields: [batchId], references: [id])
   facultyId   Int
-  faculty     Faculty      @relation(fields: [facultyId], references: [id])
   qrSecret    String       @unique
   startTime   DateTime     @default(now())
   endTime     DateTime?
@@ -380,30 +378,32 @@ model AttendanceSession {
   longitude   Float        @default(0)
   radius      Int          @default(100)
   active      Boolean      @default(true)
-  attendances Attendance[]
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
+  attendances Attendance[]
+  batch       Batch        @relation(fields: [batchId], references: [id])
+  faculty     Faculty      @relation(fields: [facultyId], references: [id])
 }
 
 model SecurityAlert {
   id        Int      @id @default(autoincrement())
   userId    Int?
-  user      User?    @relation(fields: [userId], references: [id])
-  type      String   // "duplicate_device", "gps_spoof", "outside_radius", "failed_attempt"
+  type      String
   message   String
   details   String   @default("")
   resolved  Boolean  @default(false)
   createdAt DateTime @default(now())
+  user      User?    @relation(fields: [userId], references: [id])
 }
 
 model FacultyClockLog {
-  id          Int      @id @default(autoincrement())
-  facultyId   Int
-  faculty     Faculty  @relation(fields: [facultyId], references: [id])
-  clockIn     DateTime
-  clockOut    DateTime?
-  totalHours  Float?
-  latitude    Float?
-  longitude   Float?
-  createdAt   DateTime @default(now())
+  id         Int       @id @default(autoincrement())
+  facultyId  Int
+  clockIn    DateTime
+  clockOut   DateTime?
+  totalHours Float?
+  latitude   Float?
+  longitude  Float?
+  createdAt  DateTime  @default(now())
+  faculty    Faculty   @relation(fields: [facultyId], references: [id])
 }
