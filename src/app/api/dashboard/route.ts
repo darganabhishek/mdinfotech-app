@@ -14,7 +14,7 @@ export async function GET() {
   const userRole = (session.user as any).role || 'staff';
   const userPermissions = (session.user as any).permissions || [];
 
-  const isFaculty = userRole === 'teacher' || userPermissions.includes('teacher_portal');
+  const isFaculty = userRole === 'faculty' || userPermissions.includes('faculty_portal');
   const isAdmin = userRole === 'admin';
   const canViewFinances = isAdmin || userPermissions.includes('manage_payments');
 
@@ -45,7 +45,7 @@ export async function GET() {
       const todaysClasses = activeBatches.filter(b => b.timeSlot);
 
       return NextResponse.json({
-        isTeacher: true, // Keep key name for frontend compatibility if needed, but it's Faculty data
+        isFaculty: true,
         totalStudents: myStudents,
         myBatches: activeBatches.length,
         todaysClasses,
@@ -105,7 +105,7 @@ export async function GET() {
     });
 
     return NextResponse.json({
-      isTeacher: false,
+      isFaculty: false,
       totalStudents,
       activeAdmissions,
       totalRevenue,

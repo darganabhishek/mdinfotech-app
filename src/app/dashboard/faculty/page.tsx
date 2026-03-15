@@ -198,7 +198,7 @@ export default function FacultyPage() {
             <div className="kpi-icon green"><FiUsers /></div>
           </div>
           <div className="kpi-value">{faculty.length}</div>
-          <div className="kpi-label">Active Teachers</div>
+          <div className="kpi-label">Active Faculty</div>
         </div>
       </div>
 

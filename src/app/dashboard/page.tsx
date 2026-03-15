@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { FiUsers, FiUserPlus, FiDollarSign, FiBookOpen, FiTrendingUp, FiClock, FiAlertCircle, FiCheckCircle } from 'react-icons/fi';
 
 interface DashboardData {
-  isTeacher?: boolean;
+  isFaculty?: boolean;
   canViewFinances?: boolean;
   totalStudents?: number;
   activeAdmissions?: number;
@@ -36,7 +36,7 @@ export default function DashboardPage() {
     return <div className="page-loading"><div className="loading-spinner" style={{ width: 40, height: 40 }} /><p>Loading dashboard...</p></div>;
   }
 
-  if (data?.isTeacher) {
+  if (data?.isFaculty) {
     return (
       <>
       {/* Faculty KPI Cards */}

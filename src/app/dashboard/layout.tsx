@@ -14,7 +14,7 @@ import { useTheme } from '@/context/ThemeContext';
 
 const navItems = [
   { section: 'Main', items: [
-    { href: '/dashboard', label: 'Dashboard', icon: FiHome, permissions: ['student_portal', 'teacher_portal', 'manage_settings', 'view_reports', 'manage_students'] }, // Basically everyone should see this, but data varies
+    { href: '/dashboard', label: 'Dashboard', icon: FiHome, permissions: ['student_portal', 'faculty_portal', 'manage_settings', 'view_reports', 'manage_students'] }, // Basically everyone should see this, but data varies
   ]},
   { section: 'Management', items: [
     { href: '/dashboard/students', label: 'Students', icon: FiUsers, permissions: ['manage_students'] },
@@ -22,13 +22,13 @@ const navItems = [
     { href: '/dashboard/batches', label: 'Batches', icon: FiLayers, permissions: ['manage_batches'] },
     { href: '/dashboard/admissions', label: 'Admissions', icon: FiUserPlus, permissions: ['manage_admissions'] },
     { href: '/dashboard/faculty', label: 'Faculty Management', icon: FiUsers, permissions: ['manage_users'] },
-    { href: '/dashboard/attendance', label: 'Attendance Hub', icon: FiActivity, permissions: ['manage_students', 'teacher_portal'] },
+    { href: '/dashboard/attendance', label: 'Attendance Hub', icon: FiActivity, permissions: ['manage_students', 'faculty_portal'] },
     { href: '/dashboard/resources', label: 'Resources', icon: FiSettings, permissions: ['manage_settings'] },
   ]},
   { section: 'Secure Attendance', items: [
-    { href: '/dashboard/attendance/session', label: 'Start QR Session', icon: FiActivity, permissions: ['teacher_portal', 'manage_students'] },
-    { href: '/dashboard/attendance/scan', label: 'Scan QR Code', icon: FiActivity, permissions: ['teacher_portal', 'manage_students'] },
-    { href: '/dashboard/attendance/clock', label: 'Faculty Clock', icon: FiActivity, permissions: ['teacher_portal'] },
+    { href: '/dashboard/attendance/session', label: 'Start QR Session', icon: FiActivity, permissions: ['faculty_portal', 'manage_students'] },
+    { href: '/dashboard/attendance/scan', label: 'Scan QR Code', icon: FiActivity, permissions: ['faculty_portal', 'manage_students'] },
+    { href: '/dashboard/attendance/clock', label: 'Faculty Clock', icon: FiActivity, permissions: ['faculty_portal'] },
     { href: '/dashboard/security-alerts', label: 'Security Alerts', icon: FiShield, permissions: ['manage_settings'] },
   ]},
   { section: 'Finance', items: [
@@ -41,7 +41,7 @@ const navItems = [
   ]},
   { section: 'Academics', items: [
     { href: '/dashboard/student', label: 'Student Portal', icon: FiBook, permissions: ['student_portal'] },
-    { href: '/dashboard/elearning', label: 'E-learning Hub', icon: FiFileText, permissions: ['teacher_portal', 'student_portal', 'manage_courses'] },
+    { href: '/dashboard/elearning', label: 'E-learning Hub', icon: FiFileText, permissions: ['faculty_portal', 'student_portal', 'manage_courses'] },
   ]},
   { section: 'Other', items: [
     { href: '/dashboard/enquiries', label: 'Enquiries', icon: FiMessageSquare, permissions: ['manage_admissions'] },
