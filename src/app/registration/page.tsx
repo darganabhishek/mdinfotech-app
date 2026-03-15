@@ -24,38 +24,56 @@ export default function RegistrationPage() {
       .catch(err => console.error('Failed to fetch courses', err));
   }, []);
 
+  const compressImage = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target?.result as string;
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const MAX_WIDTH = 800;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > MAX_WIDTH) {
+            height *= MAX_WIDTH / width;
+            width = MAX_WIDTH;
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx?.drawImage(img, 0, 0, width, height);
+          
+          // Quality 0.6 to keep size very small (~50-100KB)
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
+          resolve(dataUrl);
+        };
+        img.onerror = (err) => reject(err);
+      };
+      reader.onerror = (err) => reject(err);
+    });
+  };
+
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
-    if (file.size > 5 * 1024 * 1024) {
-      setFileError('File size exceeds 5MB limit.');
-      return;
-    }
 
     if (!['image/jpeg', 'image/png'].includes(file.type)) {
       setFileError('Only JPG/PNG images are allowed.');
       return;
     }
-    setFileError('');
     
-    const formData = new FormData();
-    formData.append('file', file);
-
+    setFileError('');
     setLoading(true);
     try {
-      const res = await fetch('/api/upload', {
-        method: 'POST',
-        body: formData,
-      });
-      const data = await res.json();
-      if (res.ok && data.url) {
-        setForm({ ...form, photo: data.url });
-      } else {
-        setFileError(data.error || 'Upload failed');
-      }
+      const compressedBase64 = await compressImage(file);
+      setForm({ ...form, photo: compressedBase64 });
     } catch (err) {
-      setFileError('Error uploading photo');
+      setFileError('Error processing photo');
+      console.error(err);
     } finally {
       setLoading(false);
     }
