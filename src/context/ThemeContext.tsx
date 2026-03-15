@@ -19,10 +19,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const savedTheme = localStorage.getItem('theme') as Theme | null;
     if (savedTheme) {
       setTheme(savedTheme);
-    } else if (window.matchMedia('(prefers-color-scheme: light)').matches) {
-      // Allow user preference if no saved theme
-      // But keeping dark as default for now per current design
-      // setTheme('dark'); 
+      document.documentElement.setAttribute('data-theme', savedTheme);
     }
     setMounted(true);
   }, []);
