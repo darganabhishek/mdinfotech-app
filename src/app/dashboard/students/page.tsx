@@ -17,7 +17,8 @@ export default function StudentsPage() {
 
   const [form, setForm] = useState({
     name: '', fatherName: '', motherName: '', phone: '', email: '',
-    address: '', city: '', state: '', pincode: '', dob: '', gender: '', qualification: ''
+    address: '', city: '', state: '', pincode: '', dob: '', gender: '', qualification: '',
+    aadhaarNo: ''
   });
 
   const fetchStudents = useCallback(async () => {
@@ -50,13 +51,25 @@ export default function StudentsPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (form.phone && !/^\d{10}$/.test(form.phone)) {
+      showToast('error', 'Phone number must be 10 digits');
+      return;
+    }
+    if (form.aadhaarNo && !/^\d{12}$/.test(form.aadhaarNo)) {
+      showToast('error', 'Aadhaar number must be 12 digits');
+      return;
+    }
+
     const url = editStudent ? `/api/students/${editStudent.id}` : '/api/students';
     const method = editStudent ? 'PUT' : 'POST';
     const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) });
     if (res.ok) {
       showToast('success', editStudent ? 'Student updated!' : 'Student created!');
       setShowModal(false); setEditStudent(null); resetForm(); fetchStudents();
-    } else { showToast('error', 'Operation failed'); }
+    } else { 
+      const data = await res.json().catch(() => ({}));
+      showToast('error', data.error || 'Operation failed'); 
+    }
   };
 
   const handleDelete = async (id: number) => {
@@ -66,10 +79,10 @@ export default function StudentsPage() {
     else { const err = await res.json().catch(() => ({})); showToast('error', err.error || 'Delete failed'); }
   };
 
-  const resetForm = () => setForm({ name: '', fatherName: '', motherName: '', phone: '', email: '', address: '', city: '', state: '', pincode: '', dob: '', gender: '', qualification: '' });
+  const resetForm = () => setForm({ name: '', fatherName: '', motherName: '', phone: '', email: '', address: '', city: '', state: '', pincode: '', dob: '', gender: '', qualification: '', aadhaarNo: '' });
 
   const openEdit = (s: any) => {
-    setForm({ name: s.name, fatherName: s.fatherName, motherName: s.motherName, phone: s.phone, email: s.email, address: s.address, city: s.city, state: s.state, pincode: s.pincode, dob: s.dob, gender: s.gender, qualification: s.qualification });
+    setForm({ name: s.name, fatherName: s.fatherName, motherName: s.motherName, phone: s.phone, email: s.email, address: s.address, city: s.city, state: s.state, pincode: s.pincode, dob: s.dob, gender: s.gender, qualification: s.qualification, aadhaarNo: s.aadhaarNo || '' });
     setEditStudent(s); setShowModal(true);
   };
 
@@ -220,7 +233,12 @@ export default function StudentsPage() {
                 <div className="form-row">
                   <div className="form-group">
                     <label>Phone</label>
-                    <input className="form-control" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} />
+                    <input 
+                      className="form-control" 
+                      value={form.phone} 
+                      maxLength={10}
+                      onChange={e => setForm({ ...form, phone: e.target.value.replace(/\D/g, '') })} 
+                    />
                   </div>
                   <div className="form-group">
                     <label>Email</label>
@@ -260,9 +278,21 @@ export default function StudentsPage() {
                     <input className="form-control" value={form.pincode} onChange={e => setForm({ ...form, pincode: e.target.value })} />
                   </div>
                 </div>
-                <div className="form-group">
-                  <label>Qualification</label>
-                  <input className="form-control" value={form.qualification} onChange={e => setForm({ ...form, qualification: e.target.value })} placeholder="e.g. 10th, 12th, Graduate" />
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>Aadhaar Card No.</label>
+                    <input 
+                      className="form-control" 
+                      value={form.aadhaarNo} 
+                      maxLength={12}
+                      onChange={e => setForm({ ...form, aadhaarNo: e.target.value.replace(/\D/g, '') })} 
+                      placeholder="12-digit Aadhaar"
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Qualification</label>
+                    <input className="form-control" value={form.qualification} onChange={e => setForm({ ...form, qualification: e.target.value })} placeholder="e.g. 10th, 12th, Graduate" />
+                  </div>
                 </div>
               </div>
               <div className="modal-footer">

@@ -85,6 +85,17 @@ export default function RegistrationPage() {
       alert('Please upload a recent photograph (JPG/PNG < 5MB).');
       return;
     }
+
+    if (!/^\d{10}$/.test(form.phone)) {
+      alert('Phone number must be exactly 10 digits.');
+      return;
+    }
+
+    if (!/^\d{12}$/.test(form.aadhaarNo)) {
+      alert('Aadhaar number must be exactly 12 digits.');
+      return;
+    }
+
     setLoading(true);
     try {
       const res = await fetch('/api/register', {
@@ -96,7 +107,8 @@ export default function RegistrationPage() {
         setSuccess(true);
         setTimeout(() => router.push('/'), 5000);
       } else {
-        alert('Registration failed. Please try again.');
+        const data = await res.json().catch(() => ({}));
+        alert(data.error || 'Registration failed. Please try again.');
       }
     } catch (err) {
       alert('Something went wrong.');
@@ -195,7 +207,14 @@ export default function RegistrationPage() {
                 <label>Phone Number *</label>
                 <div className="input-with-icon">
                   <FiPhone className="icon" />
-                  <input type="tel" required placeholder="10-digit mobile" value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} />
+                  <input 
+                    type="tel" 
+                    required 
+                    placeholder="10-digit mobile" 
+                    value={form.phone} 
+                    maxLength={10}
+                    onChange={e => setForm({...form, phone: e.target.value.replace(/\D/g, '')})} 
+                  />
                 </div>
               </div>
               <div className="form-group">
@@ -214,7 +233,14 @@ export default function RegistrationPage() {
               </div>
               <div className="form-group">
                 <label>Aadhaar Card No. *</label>
-                <input type="text" required placeholder="12-digit Aadhaar" value={form.aadhaarNo} onChange={e => setForm({...form, aadhaarNo: e.target.value})} />
+                <input 
+                  type="text" 
+                  required 
+                  placeholder="12-digit Aadhaar" 
+                  value={form.aadhaarNo} 
+                  maxLength={12}
+                  onChange={e => setForm({...form, aadhaarNo: e.target.value.replace(/\D/g, '')})} 
+                />
               </div>
               <div className="form-group">
                 <label>Qualification *</label>

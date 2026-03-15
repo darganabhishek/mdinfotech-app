@@ -40,6 +40,15 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
+    const { phone, aadhaarNo } = body;
+
+    if (phone && !/^\d{10}$/.test(phone)) {
+      return NextResponse.json({ error: 'Phone number must be exactly 10 digits' }, { status: 400 });
+    }
+
+    if (aadhaarNo && !/^\d{12}$/.test(aadhaarNo)) {
+      return NextResponse.json({ error: 'Aadhaar number must be exactly 12 digits' }, { status: 400 });
+    }
 
     // Generate enrollment number
     const count = await prisma.student.count();

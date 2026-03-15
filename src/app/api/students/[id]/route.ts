@@ -17,6 +17,15 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
   try {
     const { id } = await params;
     const body = await request.json();
+    const { phone, aadhaarNo } = body;
+
+    if (phone && !/^\d{10}$/.test(phone)) {
+      return NextResponse.json({ error: 'Phone number must be exactly 10 digits' }, { status: 400 });
+    }
+
+    if (aadhaarNo && !/^\d{12}$/.test(aadhaarNo)) {
+      return NextResponse.json({ error: 'Aadhaar number must be exactly 12 digits' }, { status: 400 });
+    }
     const student = await prisma.student.update({
       where: { id: parseInt(id) },
       data: body,

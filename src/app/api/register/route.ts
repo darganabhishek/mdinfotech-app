@@ -14,6 +14,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Photograph is mandatory' }, { status: 400 });
     }
 
+    if (phone && !/^\d{10}$/.test(phone)) {
+      return NextResponse.json({ error: 'Phone number must be exactly 10 digits' }, { status: 400 });
+    }
+
+    if (aadhaarNo && !/^\d{12}$/.test(aadhaarNo)) {
+      return NextResponse.json({ error: 'Aadhaar number must be exactly 12 digits' }, { status: 400 });
+    }
+
     // 1. Generate enrollment number
     const count = await prisma.student.count();
     const enrollmentNo = `MDI${new Date().getFullYear()}${String(count + 1).padStart(4, '0')}`;
