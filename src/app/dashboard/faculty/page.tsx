@@ -7,6 +7,7 @@ import BulkActions from '@/components/dashboard/BulkActions';
 
 interface Faculty {
   id: number;
+  userId: number;
   name: string;
   email: string;
   phone: string;
@@ -17,13 +18,21 @@ interface Faculty {
   active: boolean;
 }
 
+interface User {
+  id: number;
+  name: string;
+  username: string;
+}
+
 export default function FacultyPage() {
   const [faculty, setFaculty] = useState<Faculty[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [showBulk, setShowBulk] = useState(false);
   const [editingFaculty, setEditingFaculty] = useState<Faculty | null>(null);
   const [formData, setFormData] = useState({
+    userId: '' as number | '',
     name: '',
     email: '',
     phone: '',
@@ -40,11 +49,20 @@ export default function FacultyPage() {
 
   const fetchData = async () => {
     try {
-      const res = await fetch('/api/faculty');
-      const data = await res.json();
-      setFaculty(data);
+      const [facRes, usrRes] = await Promise.all([
+        fetch('/api/faculty'),
+        fetch('/api/users')
+      ]);
+      const facData = await facRes.json();
+      const usrData = await usrRes.json();
+      setFaculty(facData);
+      // Filter users to only those with roles that might be faculty (if applicable), or all active users.
+      // For now, we list all users to let the admin choose.
+      if (Array.isArray(usrData)) {
+         setUsers(usrData);
+      }
     } catch (error) {
-      toast.error('Failed to fetch faculty data');
+      toast.error('Failed to fetch data');
     } finally {
       setLoading(false);
     }
@@ -68,6 +86,7 @@ export default function FacultyPage() {
     if (f) {
       setEditingFaculty(f);
       setFormData({
+        userId: f.userId || '',
         name: f.name,
         email: f.email,
         phone: f.phone,
@@ -80,12 +99,29 @@ export default function FacultyPage() {
     } else {
       setEditingFaculty(null);
       setFormData({
-        name: '', email: '', phone: '', qualification: '',
+        userId: '', name: '', email: '', phone: '', qualification: '',
         specialization: '', joiningDate: new Date().toISOString().split('T')[0],
         salary: 0, active: true
       });
     }
     setModalOpen(true);
+  };
+
+  const handleUserSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedUserId = parseInt(e.target.value);
+    const selectedUser = users.find(u => u.id === selectedUserId);
+    
+    if (selectedUser) {
+      setFormData(prev => ({
+        ...prev,
+        userId: selectedUserId,
+        name: selectedUser.name,
+        // Optional: prefill email if the username happens to be an email
+        email: selectedUser.username.includes('@') ? selectedUser.username : prev.email
+      }));
+    } else {
+      setFormData(prev => ({ ...prev, userId: '', name: '' }));
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -230,15 +266,33 @@ export default function FacultyPage() {
             <form onSubmit={handleSubmit} className="page-content">
               <div className="form-row">
                 <div className="form-group">
-                  <label>Full Name</label>
+                  <label>Link User Account *</label>
+                  <select
+                    className="form-control"
+                    value={formData.userId}
+                    onChange={handleUserSelect}
+                    required
+                    disabled={!!editingFaculty} // Usually shouldn't change the linked account after creation
+                  >
+                    <option value="">-- Select a User Account --</option>
+                    {users.map(u => (
+                      <option key={u.id} value={u.id}>{u.name} ({u.username})</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>Faculty Name (Auto-filled)</label>
                   <input
                     type="text"
                     className="form-control"
                     value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    required
+                    readOnly
+                    style={{ background: 'var(--bg-input)', cursor: 'not-allowed' }}
                   />
                 </div>
+              </div>
+
+              <div className="form-row">
                 <div className="form-group">
                   <label>Specialization (Subjects)</label>
                   <input
