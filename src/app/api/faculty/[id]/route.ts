@@ -38,16 +38,11 @@ export async function DELETE(
     const { id: idStr } = await params;
     const id = parseInt(idStr);
     
-    // First check if they have active batches
-    const activeBatches = await prisma.batch.count({ 
-      where: { facultyId: id, status: 'active' } 
+    // Unassign from any batches they are currently teaching
+    await prisma.batch.updateMany({
+      where: { facultyId: id },
+      data: { facultyId: null }
     });
-    
-    if (activeBatches > 0) {
-      return NextResponse.json({ 
-        error: 'Cannot delete faculty assigned to active batches. Reassign the batches first.' 
-      }, { status: 400 });
-    }
 
     try {
       // Try hard delete first
