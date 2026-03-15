@@ -28,39 +28,48 @@ export async function PUT(
     const id = parseInt(idStr);
     const body = await request.json();
     
+    const { 
+      admissionDate, status, notes, paymentPlan, installmentAmount, installmentsCount,
+      studentId, courseId, batchId
+    } = body;
+
+    const data: any = {
+      admissionDate,
+      status,
+      notes,
+    };
+
+    if (studentId) data.studentId = Number(studentId);
+    if (courseId) data.courseId = Number(courseId);
+
     // Recalculate netFee if course or discount changed
-    let updatedData: any = { ...body };
     if (body.courseId || body.discount !== undefined) {
-      const courseId = body.courseId ? Number(body.courseId) : undefined;
-      const discount = body.discount !== undefined ? Number(body.discount) : undefined;
-      
-      const currentAdm = await prisma.admission.findUnique({ where: { id } });
-      const finalCourseId = courseId || currentAdm?.courseId;
-      const finalDiscount = discount !== undefined ? discount : currentAdm?.discount || 0;
+      const finalCourseId = body.courseId ? Number(body.courseId) : (await prisma.admission.findUnique({ where: { id } }))?.courseId;
+      const finalDiscount = body.discount !== undefined ? Number(body.discount) : (await prisma.admission.findUnique({ where: { id } }))?.discount || 0;
       
       const course = await prisma.course.findUnique({ where: { id: finalCourseId } });
       const totalFee = course?.fee || 0;
-      updatedData.totalFee = totalFee;
-      updatedData.discount = finalDiscount;
-      updatedData.netFee = totalFee - finalDiscount;
+      data.totalFee = totalFee;
+      data.discount = finalDiscount;
+      data.netFee = totalFee - finalDiscount;
     }
     
-    if (body.paymentPlan !== undefined) {
-      updatedData.paymentPlan = body.paymentPlan;
-      updatedData.installmentAmount = body.installmentAmount ? Number(body.installmentAmount) : null;
-      updatedData.installmentsCount = body.installmentsCount ? Number(body.installmentsCount) : null;
+    if (paymentPlan !== undefined) {
+      data.paymentPlan = paymentPlan;
+      data.installmentAmount = installmentAmount ? Number(installmentAmount) : null;
+      data.installmentsCount = installmentsCount ? Number(installmentsCount) : null;
     }
 
-    let targetBatchId = body.batchId ? Number(body.batchId) : undefined;
-    const finalCourseId = body.courseId ? Number(body.courseId) : (await prisma.admission.findUnique({ where: { id } }))?.courseId;
+    let targetBatchId = batchId ? Number(batchId) : undefined;
+    const currentCourseId = body.courseId ? Number(body.courseId) : (await prisma.admission.findUnique({ where: { id } }))?.courseId;
 
-    if (body.timeSlotId && finalCourseId) {
+    if (body.timeSlotId && currentCourseId) {
       const timeSlotId = parseInt(body.timeSlotId);
       const timeSlot = await prisma.timeSlot.findUnique({ where: { id: timeSlotId } });
       if (!timeSlot) return NextResponse.json({ error: 'Time slot not found' }, { status: 404 });
 
       let batch = await prisma.batch.findFirst({
-        where: { courseId: finalCourseId, timeSlotId },
+        where: { courseId: currentCourseId, timeSlotId },
         include: { _count: { select: { admissions: { where: { status: 'active' } } } } }
       });
 
@@ -68,16 +77,16 @@ export async function PUT(
         if (body.status === 'active' && batch._count.admissions >= 20) {
           const currentAdm = await prisma.admission.findUnique({ where: { id } });
           if (currentAdm?.batchId !== batch.id) {
-            return NextResponse.json({ error: 'Batch Full — Please choose another time slot.' }, { status: 400 });
+            return NextResponse.json({ error: 'Batch Full ΓÇö Please choose another time slot.' }, { status: 400 });
           }
         }
         targetBatchId = batch.id;
       } else {
-        const course = await prisma.course.findUnique({ where: { id: finalCourseId } });
+        const course = await prisma.course.findUnique({ where: { id: currentCourseId } });
         batch = await prisma.batch.create({
           data: {
             name: `${course?.name || 'Course'} Batch`,
-            courseId: finalCourseId,
+            courseId: currentCourseId,
             timeSlotId,
             capacity: 20,
             timing: timeSlot.label,
@@ -92,9 +101,7 @@ export async function PUT(
     const admission = await prisma.admission.update({
       where: { id },
       data: {
-        ...updatedData,
-        studentId: body.studentId ? Number(body.studentId) : undefined,
-        courseId: body.courseId ? Number(body.courseId) : undefined,
+        ...data,
         batchId: targetBatchId,
       }
     });
