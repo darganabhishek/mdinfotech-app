@@ -7,7 +7,15 @@ export async function GET(request: Request) {
     const courseId = searchParams.get('courseId');
     const where: any = {};
     if (courseId) where.courseId = parseInt(courseId);
-    const batches = await prisma.batch.findMany({ where, orderBy: { name: 'asc' }, include: { course: true, _count: { select: { admissions: true } } } });
+    const batches = await prisma.batch.findMany({ 
+      where, 
+      orderBy: { name: 'asc' }, 
+      include: { 
+        course: true, 
+        timeSlot: true,
+        _count: { select: { admissions: true } } 
+      } 
+    });
     return NextResponse.json(batches);
   } catch { return NextResponse.json({ error: 'Error' }, { status: 500 }); }
 }

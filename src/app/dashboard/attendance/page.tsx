@@ -113,7 +113,16 @@ export default function AttendancePage() {
   };
 
   const activeBatches = batches.filter(isBatchActiveNow);
-  const otherBatches = batches.filter(b => !isBatchActiveNow(b));
+  
+  // Group batches by their time slot name/time
+  const groupedOtherBatches = batches.reduce((acc: any, batch: any) => {
+    // Skip if already in activeBatches to avoid duplicates if we want strictly "other"
+    // but the user wants "time slot wise", so grouping all by time slot makes sense.
+    const slotLabel = batch.timeSlot ? `${batch.timeSlot.name} (${batch.timeSlot.startTime} - ${batch.timeSlot.endTime})` : 'Unscheduled Batches';
+    if (!acc[slotLabel]) acc[slotLabel] = [];
+    acc[slotLabel].push(batch);
+    return acc;
+  }, {});
 
   return (
     <div className="attendance-page">
@@ -127,7 +136,7 @@ export default function AttendancePage() {
       <div className="data-card" style={{ marginBottom: '24px' }}>
         <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', padding: '16px' }}>
           <div className="form-group" style={{ flex: 1, minWidth: '300px', marginBottom: 0 }}>
-            <label>Select Batch</label>
+            <label>Select Batch (Grouped by Time Slot)</label>
             <select 
               className="form-control" 
               value={selectedBatchId} 
@@ -135,17 +144,21 @@ export default function AttendancePage() {
             >
               <option value="">Choose Batch...</option>
               {activeBatches.length > 0 && (
-                <optgroup label="Ongoing Time Slots">
+                <optgroup label="🔥 Ongoing Right Now">
                   {activeBatches.map(b => (
-                    <option key={b.id} value={b.id}>🟢 {b.name} ({b.timeSlot?.startTime} - {b.timeSlot?.endTime})</option>
+                    <option key={`active-${b.id}`} value={b.id}>🟢 {b.name} (Scheduled: {b.timeSlot?.startTime})</option>
                   ))}
                 </optgroup>
               )}
-              <optgroup label="Other Batches">
-                {otherBatches.map(b => (
-                  <option key={b.id} value={b.id}>⚪ {b.name} ({b.timeSlot?.startTime || 'No Slot'})</option>
-                ))}
-              </optgroup>
+              {Object.keys(groupedOtherBatches).sort().map(slot => (
+                <optgroup key={slot} label={slot}>
+                  {groupedOtherBatches[slot].map((b: any) => (
+                    <option key={b.id} value={b.id}>
+                      {isBatchActiveNow(b) ? '🟢' : '⚪'} {b.name}
+                    </option>
+                  ))}
+                </optgroup>
+              ))}
             </select>
           </div>
           <div className="form-group" style={{ width: '200px', marginBottom: 0 }}>
