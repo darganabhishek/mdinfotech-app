@@ -13,8 +13,9 @@ export default function RegistrationPage() {
     name: '', email: '', phone: '', fatherName: '', motherName: '',
     dob: '', gender: '', address: '', city: 'Noida', state: 'Uttar Pradesh',
     pincode: '', qualification: '', aadhaarNo: '', prevKnowledge: '',
-    courseId: '', batchTiming: '', dateOfJoining: new Date().toISOString().split('T')[0]
+    courseId: '', batchTiming: '', dateOfJoining: new Date().toISOString().split('T')[0], photo: ''
   });
+  const [fileError, setFileError] = useState('');
 
   useEffect(() => {
     fetch('/api/courses')
@@ -23,8 +24,49 @@ export default function RegistrationPage() {
       .catch(err => console.error('Failed to fetch courses', err));
   }, []);
 
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      setFileError('File size exceeds 5MB limit.');
+      return;
+    }
+
+    if (!['image/jpeg', 'image/png'].includes(file.type)) {
+      setFileError('Only JPG/PNG images are allowed.');
+      return;
+    }
+    setFileError('');
+    
+    const formData = new FormData();
+    formData.append('file', file);
+
+    setLoading(true);
+    try {
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
+      if (res.ok && data.url) {
+        setForm({ ...form, photo: data.url });
+      } else {
+        setFileError(data.error || 'Upload failed');
+      }
+    } catch (err) {
+      setFileError('Error uploading photo');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!form.photo) {
+      alert('Please upload a recent photograph (JPG/PNG < 5MB).');
+      return;
+    }
     setLoading(true);
     try {
       const res = await fetch('/api/register', {
@@ -34,7 +76,7 @@ export default function RegistrationPage() {
       });
       if (res.ok) {
         setSuccess(true);
-        setTimeout(() => router.push('/login'), 5000);
+        setTimeout(() => router.push('/'), 5000);
       } else {
         alert('Registration failed. Please try again.');
       }
@@ -90,12 +132,12 @@ export default function RegistrationPage() {
                 </div>
               </div>
               <div className="form-group">
-                <label>Father's Name</label>
-                <input type="text" placeholder="Father's Name" value={form.fatherName} onChange={e => setForm({...form, fatherName: e.target.value})} />
+                <label>Father's Name *</label>
+                <input type="text" required placeholder="Father's Name" value={form.fatherName} onChange={e => setForm({...form, fatherName: e.target.value})} />
               </div>
               <div className="form-group">
-                <label>Mother's Name</label>
-                <input type="text" placeholder="Mother's Name" value={form.motherName} onChange={e => setForm({...form, motherName: e.target.value})} />
+                <label>Mother's Name *</label>
+                <input type="text" required placeholder="Mother's Name" value={form.motherName} onChange={e => setForm({...form, motherName: e.target.value})} />
               </div>
               <div className="form-group">
                 <label>Date of Birth *</label>
@@ -113,6 +155,17 @@ export default function RegistrationPage() {
                   <option value="Other">Other</option>
                 </select>
               </div>
+              <div className="form-group full-width">
+                <label>Recent Photograph (JPG/PNG, max 5MB) *</label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                  <div className="input-with-icon" style={{ flex: 1, position: 'relative' }}>
+                    <FiCamera className="icon" style={{ position: 'absolute', left: '14px', top: '14px', color: '#1a237e', opacity: 0.6 }} />
+                    <input type="file" accept=".jpg,.jpeg,.png" required={!form.photo} onChange={handleFileChange} style={{ width: '100%', padding: '12px 16px', paddingLeft: '44px', border: '2px solid #eef0f7', borderRadius: '12px' }} />
+                  </div>
+                  {form.photo && <img src={form.photo} alt="Preview" style={{ height: '50px', width: '50px', objectFit: 'cover', borderRadius: '8px', border: '1px solid #ddd' }} />}
+                </div>
+                {fileError && <span style={{ color: '#ff5252', fontSize: '0.8rem', marginTop: '4px' }}>{fileError}</span>}
+              </div>
             </div>
           </div>
 
@@ -128,10 +181,10 @@ export default function RegistrationPage() {
                 </div>
               </div>
               <div className="form-group">
-                <label>Email Address</label>
+                <label>Email Address *</label>
                 <div className="input-with-icon">
                   <FiMail className="icon" />
-                  <input type="email" placeholder="email@example.com" value={form.email} onChange={e => setForm({...form, email: e.target.value})} />
+                  <input type="email" required placeholder="email@example.com" value={form.email} onChange={e => setForm({...form, email: e.target.value})} />
                 </div>
               </div>
               <div className="form-group full-width">
@@ -176,21 +229,21 @@ export default function RegistrationPage() {
                 </div>
               </div>
               <div className="form-group">
-                <label>Preferred Batch Timing</label>
+                <label>Preferred Batch Timing *</label>
                 <div className="input-with-icon">
                   <FiClock className="icon" />
-                  <input type="text" placeholder="e.g. 10:00 AM - 12:00 PM" value={form.batchTiming} onChange={e => setForm({...form, batchTiming: e.target.value})} />
+                  <input type="text" required placeholder="e.g. 10:00 AM - 12:00 PM" value={form.batchTiming} onChange={e => setForm({...form, batchTiming: e.target.value})} />
                 </div>
               </div>
               <div className="form-group">
-                <label>Date of Joining</label>
-                <input type="date" value={form.dateOfJoining} onChange={e => setForm({...form, dateOfJoining: e.target.value})} />
+                <label>Date of Joining *</label>
+                <input type="date" required value={form.dateOfJoining} onChange={e => setForm({...form, dateOfJoining: e.target.value})} />
               </div>
               <div className="form-group full-width">
-                <label>Previous Knowledge in Computers</label>
+                <label>Previous Knowledge in Computers *</label>
                 <div className="input-with-icon">
                   <FiFileText className="icon" />
-                  <textarea placeholder="Tell us about your computer background..." value={form.prevKnowledge} onChange={e => setForm({...form, prevKnowledge: e.target.value})} />
+                  <textarea required placeholder="Tell us about your computer background..." value={form.prevKnowledge} onChange={e => setForm({...form, prevKnowledge: e.target.value})} />
                 </div>
               </div>
             </div>

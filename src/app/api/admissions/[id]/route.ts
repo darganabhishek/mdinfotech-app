@@ -51,13 +51,51 @@ export async function PUT(
       updatedData.installmentsCount = body.installmentsCount ? Number(body.installmentsCount) : null;
     }
 
+    let targetBatchId = body.batchId ? Number(body.batchId) : undefined;
+    const finalCourseId = body.courseId ? Number(body.courseId) : (await prisma.admission.findUnique({ where: { id } }))?.courseId;
+
+    if (body.timeSlotId && finalCourseId) {
+      const timeSlotId = parseInt(body.timeSlotId);
+      const timeSlot = await prisma.timeSlot.findUnique({ where: { id: timeSlotId } });
+      if (!timeSlot) return NextResponse.json({ error: 'Time slot not found' }, { status: 404 });
+
+      let batch = await prisma.batch.findFirst({
+        where: { courseId: finalCourseId, timeSlotId },
+        include: { _count: { select: { admissions: { where: { status: 'active' } } } } }
+      });
+
+      if (batch) {
+        if (body.status === 'active' && batch._count.admissions >= 20) {
+          const currentAdm = await prisma.admission.findUnique({ where: { id } });
+          if (currentAdm?.batchId !== batch.id) {
+            return NextResponse.json({ error: 'Batch Full — Please choose another time slot.' }, { status: 400 });
+          }
+        }
+        targetBatchId = batch.id;
+      } else {
+        const course = await prisma.course.findUnique({ where: { id: finalCourseId } });
+        batch = await prisma.batch.create({
+          data: {
+            name: `${course?.name || 'Course'} Batch`,
+            courseId: finalCourseId,
+            timeSlotId,
+            capacity: 20,
+            timing: timeSlot.label,
+            status: 'active'
+          },
+          include: { _count: { select: { admissions: true } } }
+        });
+        targetBatchId = batch.id;
+      }
+    }
+
     const admission = await prisma.admission.update({
       where: { id },
       data: {
         ...updatedData,
         studentId: body.studentId ? Number(body.studentId) : undefined,
         courseId: body.courseId ? Number(body.courseId) : undefined,
-        batchId: body.batchId ? Number(body.batchId) : undefined,
+        batchId: targetBatchId,
       }
     });
     return NextResponse.json(admission);

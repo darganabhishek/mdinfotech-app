@@ -165,7 +165,7 @@ export default function AdmissionsPage() {
           <div className="data-card-filters">
             <div className="search-input"><FiSearch className="search-icon" /><input placeholder="Search..." value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} /></div>
             <select className="form-control" style={{ width: 'auto', padding: '8px 36px 8px 12px' }} value={statusFilter} onChange={e => { setStatusFilter(e.target.value); setPage(1); }}>
-              <option value="">All Status</option><option value="active">Active</option><option value="completed">Completed</option><option value="dropped">Dropped</option>
+              <option value="">All Status</option><option value="active">Active</option><option value="completed">Completed</option><option value="dropped">Dropped</option><option value="pending">Pending</option>
             </select>
           </div>
         </div>
@@ -192,11 +192,20 @@ export default function AdmissionsPage() {
                         <td>₹{a.netFee?.toLocaleString()}</td>
                         <td style={{ color: 'var(--success)', fontWeight: 700 }}>₹{paid.toLocaleString()}</td>
                         <td style={{ color: balance > 0 ? 'var(--danger)' : 'var(--success)', fontWeight: 700 }}>₹{balance.toLocaleString()}</td>
-                        <td><span className={`badge badge-${a.status === 'active' ? 'active' : a.status === 'completed' ? 'completed' : 'danger'}`}>{a.status}</span></td>
+                        <td><span className={`badge badge-${a.status === 'active' ? 'active' : a.status === 'completed' ? 'completed' : a.status === 'pending' ? 'warning' : 'danger'}`}>{a.status}</span></td>
                         <td>
                           <div style={{ display: 'flex', gap: 8 }}>
-                            <button className="btn btn-outline btn-sm" onClick={() => openEditAdmission(a)}><FiEdit2 /></button>
-                            <button className="btn btn-outline btn-sm" onClick={() => handleDelete(a.id)} style={{ color: 'var(--danger)' }}><FiTrash2 /></button>
+                            {a.status === 'pending' ? (
+                              <>
+                                <button className="btn btn-outline btn-sm" onClick={() => openEditAdmission(a)} style={{ color: 'var(--success)' }}>Approve</button>
+                                <button className="btn btn-outline btn-sm" onClick={() => handleDelete(a.id)} style={{ color: 'var(--danger)' }}>Decline</button>
+                              </>
+                            ) : (
+                              <>
+                                <button className="btn btn-outline btn-sm" onClick={() => openEditAdmission(a)}><FiEdit2 /></button>
+                                <button className="btn btn-outline btn-sm" onClick={() => handleDelete(a.id)} style={{ color: 'var(--danger)' }}><FiTrash2 /></button>
+                              </>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -217,7 +226,7 @@ export default function AdmissionsPage() {
                         <div className="mobile-data-card-title">{a.student?.name}</div>
                         <div className="mobile-data-card-subtitle">{a.student?.enrollmentNo}</div>
                       </div>
-                      <span className={`badge badge-${a.status === 'active' ? 'active' : a.status === 'completed' ? 'completed' : 'danger'}`}>{a.status}</span>
+                      <span className={`badge badge-${a.status === 'active' ? 'active' : a.status === 'completed' ? 'completed' : a.status === 'pending' ? 'warning' : 'danger'}`}>{a.status}</span>
                     </div>
                     <div className="mobile-data-card-body">
                       <div className="mobile-data-card-field">
@@ -242,8 +251,17 @@ export default function AdmissionsPage() {
                       </div>
                     </div>
                     <div className="mobile-data-card-actions">
-                      <button className="btn btn-outline btn-sm" onClick={() => openEditAdmission(a)} style={{ flex: 1 }}><FiEdit2 /> Edit</button>
-                      <button className="btn btn-outline btn-sm" onClick={() => handleDelete(a.id)} style={{ color: 'var(--danger)', flex: 1 }}><FiTrash2 /> Delete</button>
+                      {a.status === 'pending' ? (
+                        <>
+                          <button className="btn btn-outline btn-sm" onClick={() => openEditAdmission(a)} style={{ flex: 1, color: 'var(--success)' }}>Approve</button>
+                          <button className="btn btn-outline btn-sm" onClick={() => handleDelete(a.id)} style={{ color: 'var(--danger)', flex: 1 }}>Decline</button>
+                        </>
+                      ) : (
+                        <>
+                          <button className="btn btn-outline btn-sm" onClick={() => openEditAdmission(a)} style={{ flex: 1 }}><FiEdit2 /> Edit</button>
+                          <button className="btn btn-outline btn-sm" onClick={() => handleDelete(a.id)} style={{ color: 'var(--danger)', flex: 1 }}><FiTrash2 /> Delete</button>
+                        </>
+                      )}
                     </div>
                   </div>
                 );

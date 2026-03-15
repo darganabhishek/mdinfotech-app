@@ -141,8 +141,8 @@ model Admission {
   student       Student       @relation(fields: [studentId], references: [id])
   courseId       Int
   course        Course        @relation(fields: [courseId], references: [id])
-  batchId       Int
-  batch         Batch         @relation(fields: [batchId], references: [id])
+  batchId       Int?
+  batch         Batch?        @relation(fields: [batchId], references: [id])
   admissionDate String
   totalFee      Float         @default(0)
   discount      Float         @default(0)

@@ -102,14 +102,7 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <p style={{
-          textAlign: 'center',
-          marginTop: '24px',
-          color: 'var(--text-muted)',
-          fontSize: '0.8rem'
-        }}>
-          New Student? <a href="/registration" style={{ color: 'var(--brand-blue-light)', fontWeight: 600, textDecoration: 'underline' }}>Register here</a>
-        </p>
+        {/* Registration link removed as per requirement */}
 
         <p style={{
           textAlign: 'center',
