@@ -10,7 +10,6 @@ export default function AttendanceSessionPage() {
   const [activeSession, setActiveSession] = useState<any>(null);
   const [qrData, setQrData] = useState<any>(null);
   const [selectedBatch, setSelectedBatch] = useState('');
-  const [selectedFaculty, setSelectedFaculty] = useState('');
   const [loading, setLoading] = useState(true);
   const timerRef = useRef<any>(null);
 
@@ -21,9 +20,8 @@ export default function AttendanceSessionPage() {
 
   const fetchData = async () => {
     try {
-      const [bRes, fRes] = await Promise.all([fetch('/api/batches'), fetch('/api/faculty')]);
+      const bRes = await fetch('/api/batches');
       setBatches(await bRes.json());
-      setFaculty(await fRes.json());
     } catch { toast.error('Failed to load'); }
     finally { setLoading(false); }
   };
@@ -91,7 +89,14 @@ export default function AttendanceSessionPage() {
   if (loading) return <div className="page-loading"><div className="loading-spinner" /></div>;
 
   const activeBatches = batches.filter(isBatchActiveNow);
-  const otherBatches = batches.filter(b => !isBatchActiveNow(b));
+  
+  // Group batches by their time slot name/time
+  const groupedBatches = batches.reduce((acc: any, batch: any) => {
+    const slotLabel = batch.timeSlot ? `${batch.timeSlot.name} (${batch.timeSlot.startTime} - ${batch.timeSlot.endTime})` : 'Unscheduled Batches';
+    if (!acc[slotLabel]) acc[slotLabel] = [];
+    acc[slotLabel].push(batch);
+    return acc;
+  }, {});
 
   return (
     <div>
@@ -105,25 +110,27 @@ export default function AttendanceSessionPage() {
       {!activeSession ? (
         <div className="data-card" style={{ padding: '24px', maxWidth: '600px' }}>
           <div className="form-group">
-            <label>Select Batch *</label>
+            <label>Select Batch (Grouped by Time Slot) *</label>
             <select className="form-control" value={selectedBatch} onChange={e => setSelectedBatch(e.target.value)}>
               <option value="">Choose a batch...</option>
               {activeBatches.length > 0 && (
-                <optgroup label="Ongoing Time Slots">
+                <optgroup label="🔥 Ongoing Right Now">
                   {activeBatches.map((b: any) => (
-                    <option key={b.id} value={b.id}>
-                      🟢 {b.name} ({b.timeSlot?.startTime} - {b.timeSlot?.endTime})
+                    <option key={`active-${b.id}`} value={b.id}>
+                      🟢 {b.name} (Scheduled: {b.timeSlot?.startTime})
                     </option>
                   ))}
                 </optgroup>
               )}
-              <optgroup label="Other Batches">
-                {otherBatches.map((b: any) => (
-                  <option key={b.id} value={b.id}>
-                    ⚪ {b.name} ({b.timeSlot?.startTime || 'No Slot'})
-                  </option>
-                ))}
-              </optgroup>
+              {Object.keys(groupedBatches).sort().map(slot => (
+                <optgroup key={slot} label={slot}>
+                  {groupedBatches[slot].map((b: any) => (
+                    <option key={b.id} value={b.id}>
+                      {isBatchActiveNow(b) ? '🟢' : '⚪'} {b.name}
+                    </option>
+                  ))}
+                </optgroup>
+              ))}
             </select>
           </div>
           
