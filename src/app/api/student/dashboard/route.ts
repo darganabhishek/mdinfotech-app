@@ -51,7 +51,7 @@ export async function GET() {
 
     const courses = student.admissions.map(a => ({
       name: a.course.name,
-      batchName: a.batch.name,
+      batchName: a.batch?.name || 'Pending/No Batch',
       status: a.status,
       netFee: a.netFee,
       paid: a.payments.reduce((s, p) => s + p.amount, 0),
