@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { formatStudentData } from '@/lib/utils';
 
 export async function GET(request: Request) {
   try {
@@ -27,7 +28,12 @@ export async function GET(request: Request) {
       prisma.admission.count({ where }),
     ]);
 
-    return NextResponse.json({ admissions, total, page, totalPages: Math.ceil(total / limit) });
+    const formattedAdmissions = admissions.map(a => ({
+      ...a,
+      student: formatStudentData(a.student)
+    }));
+
+    return NextResponse.json({ admissions: formattedAdmissions, total, page, totalPages: Math.ceil(total / limit) });
   } catch { return NextResponse.json({ error: 'Error' }, { status: 500 }); }
 }
 
@@ -103,7 +109,10 @@ export async function POST(request: Request) {
       include: { student: true, course: true, batch: { include: { timeSlot: true } } },
     });
 
-    return NextResponse.json(admission, { status: 201 });
+    return NextResponse.json({
+      ...admission,
+      student: formatStudentData(admission.student)
+    }, { status: 201 });
   } catch (error) {
     console.error('Create admission error:', error);
     return NextResponse.json({ error: 'Error creating admission' }, { status: 500 });

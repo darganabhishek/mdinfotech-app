@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { formatStudentData, formatFacultyData } from '@/lib/utils';
 
 export async function GET() {
   const session = await getServerSession(authOptions);
@@ -104,6 +105,20 @@ export async function GET() {
       include: { _count: { select: { admissions: true } } },
     });
 
+    // Format recent data for display
+    const formattedPayments = recentPayments.map((p: any) => ({
+      ...p,
+      admission: p.admission ? {
+        ...p.admission,
+        student: formatStudentData(p.admission.student)
+      } : null
+    }));
+
+    const formattedAdmissions = recentAdmissions.map((a: any) => ({
+      ...a,
+      student: formatStudentData(a.student)
+    }));
+
     return NextResponse.json({
       isFaculty: false,
       totalStudents,
@@ -112,8 +127,8 @@ export async function GET() {
       pendingFees,
       totalCourses,
       totalEnquiries,
-      recentPayments,
-      recentAdmissions,
+      recentPayments: formattedPayments,
+      recentAdmissions: formattedAdmissions,
       courseStats: courseStats.map((c: any) => ({ name: c.code, count: c._count.admissions })),
       revenueTrend,
       canViewFinances

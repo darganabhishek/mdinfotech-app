@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { toTitleCase, formatStudentData } from '@/lib/utils';
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -9,7 +10,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       include: { admissions: { include: { course: true, batch: true, payments: true } } },
     });
     if (!student) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-    return NextResponse.json(student);
+    return NextResponse.json(formatStudentData(student));
   } catch { return NextResponse.json({ error: 'Error' }, { status: 500 }); }
 }
 
@@ -26,11 +27,21 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     if (aadhaarNo && !/^\d{12}$/.test(aadhaarNo)) {
       return NextResponse.json({ error: 'Aadhaar number must be exactly 12 digits' }, { status: 400 });
     }
+
+    // Clean data for Title Case
+    const updateData = { ...body };
+    if (updateData.name) updateData.name = toTitleCase(updateData.name);
+    if (updateData.fatherName) updateData.fatherName = toTitleCase(updateData.fatherName);
+    if (updateData.motherName) updateData.motherName = toTitleCase(updateData.motherName);
+    if (updateData.city) updateData.city = toTitleCase(updateData.city);
+    if (updateData.state) updateData.state = toTitleCase(updateData.state);
+    if (updateData.qualification) updateData.qualification = toTitleCase(updateData.qualification);
+
     const student = await prisma.student.update({
       where: { id: parseInt(id) },
-      data: body,
+      data: updateData,
     });
-    return NextResponse.json(student);
+    return NextResponse.json(formatStudentData(student));
   } catch { return NextResponse.json({ error: 'Error' }, { status: 500 }); }
 }
 

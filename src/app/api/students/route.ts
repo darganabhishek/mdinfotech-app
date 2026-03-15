@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { generateEnrollmentNo } from '@/lib/student';
+import { toTitleCase, formatStudentData } from '@/lib/utils';
 
 export async function GET(request: Request) {
   try {
@@ -32,7 +33,10 @@ export async function GET(request: Request) {
       prisma.student.count({ where }),
     ]);
 
-    return NextResponse.json({ students, total, page, totalPages: Math.ceil(total / limit) });
+    // Format names to Title Case for display
+    const formattedStudents = students.map(formatStudentData);
+
+    return NextResponse.json({ students: formattedStudents, total, page, totalPages: Math.ceil(total / limit) });
   } catch (error) {
     return NextResponse.json({ error: 'Failed to fetch students' }, { status: 500 });
   }
@@ -57,23 +61,23 @@ export async function POST(request: Request) {
     const student = await prisma.student.create({
       data: {
         enrollmentNo,
-        name: body.name,
-        fatherName: body.fatherName || '',
-        motherName: body.motherName || '',
+        name: toTitleCase(body.name || ''),
+        fatherName: toTitleCase(body.fatherName || ''),
+        motherName: toTitleCase(body.motherName || ''),
         phone: body.phone || '',
         email: body.email || '',
         address: body.address || '',
-        city: body.city || '',
-        state: body.state || '',
+        city: toTitleCase(body.city || ''),
+        state: toTitleCase(body.state || ''),
         pincode: body.pincode || '',
         dob: body.dob || '',
         gender: body.gender || '',
-        qualification: body.qualification || '',
+        qualification: toTitleCase(body.qualification || ''),
         status: 'active',
       },
     });
 
-    return NextResponse.json(student, { status: 201 });
+    return NextResponse.json(formatStudentData(student), { status: 201 });
   } catch (error) {
     console.error('Create student error:', error);
     return NextResponse.json({ error: 'Failed to create student' }, { status: 500 });

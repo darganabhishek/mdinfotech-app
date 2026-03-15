@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { toTitleCase, formatFacultyData } from '@/lib/utils';
 
 export async function PUT(
   req: Request,
@@ -15,11 +16,18 @@ export async function PUT(
   try {
     const { id: idStr } = await params;
     const data = await req.json();
+
+    // Clean data for Title Case
+    const updateData = { ...data };
+    if (updateData.name) updateData.name = toTitleCase(updateData.name);
+    if (updateData.qualification) updateData.qualification = toTitleCase(updateData.qualification);
+    if (updateData.specialization) updateData.specialization = toTitleCase(updateData.specialization);
+
     const faculty = await prisma.faculty.update({
       where: { id: parseInt(idStr) },
-      data
+      data: updateData
     });
-    return NextResponse.json(faculty);
+    return NextResponse.json(formatFacultyData(faculty));
   } catch (error) {
     return NextResponse.json({ error: 'Failed to update faculty' }, { status: 500 });
   }
