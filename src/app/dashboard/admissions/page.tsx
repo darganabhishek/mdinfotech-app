@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState, useCallback } from 'react';
-import { FiPlus, FiSearch, FiDollarSign, FiEdit2, FiTrash2 } from 'react-icons/fi';
+import { FiPlus, FiSearch, FiDollarSign, FiEdit2, FiTrash2, FiDownload, FiUpload } from 'react-icons/fi';
 
 export default function AdmissionsPage() {
   const [admissions, setAdmissions] = useState<any[]>([]);
@@ -10,6 +10,9 @@ export default function AdmissionsPage() {
   const [statusFilter, setStatusFilter] = useState('');
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importing, setImporting] = useState(false);
   const [editAdmission, setEditAdmission] = useState<any>(null);
   const [students, setStudents] = useState<any[]>([]);
   const [courses, setCourses] = useState<any[]>([]);
@@ -98,6 +101,51 @@ export default function AdmissionsPage() {
     }
   };
 
+  const handleExport = () => {
+    window.location.href = '/api/admissions/export';
+  };
+
+  const handleImport = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!importFile) { showToast('error', 'Please select a CSV file'); return; }
+    setImporting(true);
+    try {
+      const text = await importFile.text();
+      const lines = text.split('\n').filter(l => l.trim() !== '');
+      if (lines.length < 2) throw new Error('File is empty or missing headers');
+      
+      const headers = lines[0].split(',').map(h => h.trim());
+      const data = lines.slice(1).map(line => {
+        const values = line.split(',');
+        const obj: any = {};
+        headers.forEach((h, i) => {
+          obj[h] = values[i] ? values[i].replace(/^"|"$/g, '').trim() : '';
+        });
+        return obj;
+      });
+
+      const res = await fetch('/api/admissions/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data })
+      });
+
+      const result = await res.json();
+      if (res.ok && result.success) {
+        showToast('success', `Imported ${result.count} admissions`);
+        setShowImportModal(false);
+        setImportFile(null);
+        fetchData();
+      } else {
+        showToast('error', `Import failed: ${result.errors?.[0] || result.error || 'Unknown error'}`);
+      }
+    } catch (err: any) {
+      showToast('error', err.message || 'Error processing file');
+    } finally {
+      setImporting(false);
+    }
+  };
+
   const getPaidAmount = (adm: any) => (adm.payments || []).reduce((s: number, p: any) => s + p.amount, 0);
 
   return (
@@ -105,7 +153,11 @@ export default function AdmissionsPage() {
       {toast && <div className="toast-container"><div className={`toast toast-${toast.type}`}>{toast.msg}</div></div>}
       <div className="page-header">
         <div><h2>Admissions</h2><p>Manage all student admissions ({total} total)</p></div>
-        <button className="btn btn-primary" onClick={openNewAdmission}><FiPlus /> New Admission</button>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button className="btn btn-outline" onClick={handleExport}><FiDownload /> Export CSV</button>
+          <button className="btn btn-outline" onClick={() => setShowImportModal(true)}><FiUpload /> Import CSV</button>
+          <button className="btn btn-primary" onClick={openNewAdmission}><FiPlus /> New Admission</button>
+        </div>
       </div>
 
       <div className="data-card">
@@ -275,6 +327,31 @@ export default function AdmissionsPage() {
               <div className="modal-footer">
                 <button type="button" className="btn btn-outline" onClick={() => setShowModal(false)}>Cancel</button>
                 <button type="submit" className="btn btn-primary"><FiDollarSign /> {editAdmission ? 'Update Admission' : 'Create Admission'}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {showImportModal && (
+        <div className="modal-overlay" onClick={() => setShowImportModal(false)}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header"><h3>Import Admissions</h3><button className="modal-close" onClick={() => setShowImportModal(false)}>×</button></div>
+            <form onSubmit={handleImport}>
+              <div className="modal-body">
+                <p style={{ marginBottom: 16, color: 'var(--text-muted)' }}>
+                  Upload a CSV file with admission details. You can <a href="/api/admissions/template" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary)', textDecoration: 'underline' }}>download the template here</a>.
+                </p>
+                <div className="form-group">
+                  <label>CSV File *</label>
+                  <input type="file" accept=".csv" className="form-control" required onChange={e => setImportFile(e.target.files?.[0] || null)} />
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-outline" onClick={() => setShowImportModal(false)}>Cancel</button>
+                <button type="submit" className="btn btn-primary" disabled={importing}>
+                  {importing ? 'Importing...' : <><FiUpload /> Import Admissions</>}
+                </button>
               </div>
             </form>
           </div>

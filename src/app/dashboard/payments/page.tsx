@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState, useCallback } from 'react';
-import { FiPlus, FiSearch, FiFileText, FiTrash2 } from 'react-icons/fi';
+import { FiPlus, FiSearch, FiFileText, FiTrash2, FiDownload, FiUpload } from 'react-icons/fi';
 import Link from 'next/link';
 
 export default function PaymentsPage() {
@@ -10,6 +10,9 @@ export default function PaymentsPage() {
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importing, setImporting] = useState(false);
   const [admissions, setAdmissions] = useState<any[]>([]);
   const [toast, setToast] = useState<{ type: string; msg: string } | null>(null);
   const [form, setForm] = useState({ admissionId: 0, amount: 0, paymentDate: new Date().toISOString().split('T')[0], paymentMode: 'cash', reference: '', notes: '' });
@@ -50,12 +53,61 @@ export default function PaymentsPage() {
     }
   };
 
+  const handleExport = () => {
+    window.location.href = '/api/payments/export';
+  };
+
+  const handleImport = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!importFile) { showToast('error', 'Please select a CSV file'); return; }
+    setImporting(true);
+    try {
+      const text = await importFile.text();
+      const lines = text.split('\n').filter(l => l.trim() !== '');
+      if (lines.length < 2) throw new Error('File is empty or missing headers');
+      
+      const headers = lines[0].split(',').map(h => h.trim());
+      const data = lines.slice(1).map(line => {
+        const values = line.split(',');
+        const obj: any = {};
+        headers.forEach((h, i) => {
+          obj[h] = values[i] ? values[i].replace(/^"|"$/g, '').trim() : '';
+        });
+        return obj;
+      });
+
+      const res = await fetch('/api/payments/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data })
+      });
+
+      const result = await res.json();
+      if (res.ok && result.success) {
+        showToast('success', `Imported ${result.count} payments`);
+        setShowImportModal(false);
+        setImportFile(null);
+        fetchPayments();
+      } else {
+        showToast('error', `Import failed: ${result.errors?.[0] || result.error || 'Unknown error'}`);
+      }
+    } catch (err: any) {
+      showToast('error', err.message || 'Error processing file');
+    } finally {
+      setImporting(false);
+    }
+  };
+
   return (
     <>
       {toast && <div className="toast-container"><div className={`toast toast-${toast.type}`}>{toast.msg}</div></div>}
       <div className="page-header">
         <div><h2>Payments</h2><p>Track all fee payments ({total} total)</p></div>
-        <button className="btn btn-primary" onClick={openNewPayment}><FiPlus /> Record Payment</button>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button className="btn btn-outline" onClick={handleExport}><FiDownload /> Export CSV</button>
+          <button className="btn btn-outline" onClick={() => setShowImportModal(true)}><FiUpload /> Import CSV</button>
+          <button className="btn btn-primary" onClick={openNewPayment}><FiPlus /> Record Payment</button>
+        </div>
       </div>
 
       <div className="data-card">
@@ -174,6 +226,32 @@ export default function PaymentsPage() {
           </div>
         </div>
       )}
+
+      {showImportModal && (
+        <div className="modal-overlay" onClick={() => setShowImportModal(false)}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header"><h3>Import Payments</h3><button className="modal-close" onClick={() => setShowImportModal(false)}>×</button></div>
+            <form onSubmit={handleImport}>
+              <div className="modal-body">
+                <p style={{ marginBottom: 16, color: 'var(--text-muted)' }}>
+                  Upload a CSV file with payment details. You can <a href="/api/payments/template" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary)', textDecoration: 'underline' }}>download the template here</a>.
+                </p>
+                <div className="form-group">
+                  <label>CSV File *</label>
+                  <input type="file" accept=".csv" className="form-control" required onChange={e => setImportFile(e.target.files?.[0] || null)} />
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-outline" onClick={() => setShowImportModal(false)}>Cancel</button>
+                <button type="submit" className="btn btn-primary" disabled={importing}>
+                  {importing ? 'Importing...' : <><FiUpload /> Import Payments</>}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
     </>
   );
 }
