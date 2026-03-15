@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState, useCallback } from 'react';
-import { FiPlus, FiSearch, FiDollarSign, FiEdit2, FiTrash2, FiDownload, FiUpload } from 'react-icons/fi';
+import { FiPlus, FiSearch, FiDollarSign, FiEdit2, FiTrash2, FiDownload, FiUpload, FiSmartphone } from 'react-icons/fi';
+import QRCode from 'qrcode';
 
 export default function AdmissionsPage() {
   const [admissions, setAdmissions] = useState<any[]>([]);
@@ -13,6 +14,8 @@ export default function AdmissionsPage() {
   const [showImportModal, setShowImportModal] = useState(false);
   const [importFile, setImportFile] = useState<File | null>(null);
   const [importing, setImporting] = useState(false);
+  const [showQrModal, setShowQrModal] = useState(false);
+  const [qrCodeUrl, setQrCodeUrl] = useState('');
   const [editAdmission, setEditAdmission] = useState<any>(null);
   const [students, setStudents] = useState<any[]>([]);
   const [courses, setCourses] = useState<any[]>([]);
@@ -30,6 +33,17 @@ export default function AdmissionsPage() {
   }, [page, search, statusFilter]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  useEffect(() => {
+    if (showQrModal) {
+      const registrationUrl = typeof window !== 'undefined' ? `${window.location.origin}/registration` : '';
+      if (registrationUrl) {
+        QRCode.toDataURL(registrationUrl, { width: 250, margin: 2, color: { dark: '#1a237e', light: '#ffffff' } })
+          .then(url => setQrCodeUrl(url))
+          .catch(err => console.error('Error generating QR code', err));
+      }
+    }
+  }, [showQrModal]);
 
   const showToast = (type: string, msg: string) => { setToast({ type, msg }); setTimeout(() => setToast(null), 3000); };
 
@@ -154,6 +168,7 @@ export default function AdmissionsPage() {
       <div className="page-header">
         <div><h2>Admissions</h2><p>Manage all student admissions ({total} total)</p></div>
         <div style={{ display: 'flex', gap: '8px' }}>
+          <button className="btn btn-outline" onClick={() => setShowQrModal(true)}><FiSmartphone /> View QR</button>
           <button className="btn btn-outline" onClick={handleExport}><FiDownload /> Export CSV</button>
           <button className="btn btn-outline" onClick={() => setShowImportModal(true)}><FiUpload /> Import CSV</button>
           <button className="btn btn-primary" onClick={openNewAdmission}><FiPlus /> New Admission</button>
@@ -372,6 +387,25 @@ export default function AdmissionsPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {showQrModal && (
+        <div className="modal-overlay">
+          <div className="modal-content" style={{ maxWidth: '400px', textAlign: 'center' }}>
+            <h2>Registration QR Code</h2>
+            <p style={{ color: 'var(--text-muted)', marginBottom: '16px' }}>Scan to access the registration form</p>
+            {qrCodeUrl ? (
+              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '24px' }}>
+                <img src={qrCodeUrl} alt="Registration QR Code" style={{ borderRadius: '12px', border: '1px solid var(--border-color)', padding: '8px', background: '#fff' }} />
+              </div>
+            ) : (
+              <div className="loading-spinner" style={{ margin: '40px auto' }} />
+            )}
+            <div className="form-actions" style={{ justifyContent: 'center' }}>
+              <button className="btn btn-primary" onClick={() => setShowQrModal(false)}>Close</button>
+            </div>
           </div>
         </div>
       )}
