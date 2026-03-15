@@ -15,20 +15,20 @@ export async function POST(req: Request) {
     if (!faculty) return NextResponse.json({ error: 'Not a faculty member' }, { status: 400 });
 
     if (body.action === 'clock-in') {
-      // Check for unclosed sessions
-      const openLog = await prisma.facultyClockLog.findFirst({
-        where: { facultyId: faculty.id, clockOut: null },
-      });
-      if (openLog) {
-        return NextResponse.json({ error: 'You already have an open clock-in. Please clock out first.' }, { status: 400 });
+      if (!body.latitude || !body.longitude) {
+        return NextResponse.json({ error: 'GPS location is mandatory. Please enable location.' }, { status: 400 });
+      }
+      if (!body.faceImage) {
+        return NextResponse.json({ error: 'Face capture is mandatory.' }, { status: 400 });
       }
 
       const log = await prisma.facultyClockLog.create({
         data: {
           facultyId: faculty.id,
           clockIn: new Date(),
-          latitude: body.latitude || null,
-          longitude: body.longitude || null,
+          latitude: body.latitude,
+          longitude: body.longitude,
+          faceImage: body.faceImage,
         },
       });
       return NextResponse.json({ success: true, message: 'Clocked in!', log });

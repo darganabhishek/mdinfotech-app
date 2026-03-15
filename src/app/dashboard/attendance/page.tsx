@@ -102,18 +102,31 @@ export default function AttendancePage() {
     }
   };
 
+  // Helper to check if batch is currently active based on its time slot
+  const isBatchActiveNow = (batch: any) => {
+    if (!batch.timeSlot) return false;
+    const now = new Date();
+    const currentMins = now.getHours() * 60 + now.getMinutes();
+    const [sH, sM] = batch.timeSlot.startTime.split(':').map(Number);
+    const [eH, eM] = batch.timeSlot.endTime.split(':').map(Number);
+    return currentMins >= (sH * 60 + sM - 15) && currentMins <= (eH * 60 + eM + 15);
+  };
+
+  const activeBatches = batches.filter(isBatchActiveNow);
+  const otherBatches = batches.filter(b => !isBatchActiveNow(b));
+
   return (
     <div className="attendance-page">
       <div className="page-header">
         <div>
-          <h2>Attendance Management</h2>
-          <p>Mark and track student attendance by batch.</p>
+          <h2>Attendance Hub</h2>
+          <p>Mark and track student attendance by batch time-slots.</p>
         </div>
       </div>
 
       <div className="data-card" style={{ marginBottom: '24px' }}>
         <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', padding: '16px' }}>
-          <div className="form-group" style={{ flex: 1, minWidth: '200px', marginBottom: 0 }}>
+          <div className="form-group" style={{ flex: 1, minWidth: '300px', marginBottom: 0 }}>
             <label>Select Batch</label>
             <select 
               className="form-control" 
@@ -121,9 +134,18 @@ export default function AttendancePage() {
               onChange={(e) => handleBatchChange(e.target.value)}
             >
               <option value="">Choose Batch...</option>
-              {batches.map(b => (
-                <option key={b.id} value={b.id}>{b.name} - {b.course?.name}</option>
-              ))}
+              {activeBatches.length > 0 && (
+                <optgroup label="Ongoing Time Slots">
+                  {activeBatches.map(b => (
+                    <option key={b.id} value={b.id}>🟢 {b.name} ({b.timeSlot?.startTime} - {b.timeSlot?.endTime})</option>
+                  ))}
+                </optgroup>
+              )}
+              <optgroup label="Other Batches">
+                {otherBatches.map(b => (
+                  <option key={b.id} value={b.id}>⚪ {b.name} ({b.timeSlot?.startTime || 'No Slot'})</option>
+                ))}
+              </optgroup>
             </select>
           </div>
           <div className="form-group" style={{ width: '200px', marginBottom: 0 }}>

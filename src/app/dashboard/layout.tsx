@@ -23,7 +23,6 @@ const navItems = [
     { href: '/dashboard/admissions', label: 'Admissions', icon: FiUserPlus, permissions: ['manage_admissions'] },
     { href: '/dashboard/faculty', label: 'Faculty Management', icon: FiUsers, permissions: ['manage_users'] },
     { href: '/dashboard/attendance', label: 'Attendance Hub', icon: FiActivity, permissions: ['manage_students', 'teacher_portal'] },
-    { href: '/dashboard/timetable', label: 'Timetable', icon: FiLayers, permissions: ['manage_batches', 'teacher_portal'] },
     { href: '/dashboard/resources', label: 'Resources', icon: FiSettings, permissions: ['manage_settings'] },
   ]},
   { section: 'Secure Attendance', items: [

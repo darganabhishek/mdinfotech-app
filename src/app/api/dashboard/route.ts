@@ -14,43 +14,42 @@ export async function GET() {
   const userRole = (session.user as any).role || 'staff';
   const userPermissions = (session.user as any).permissions || [];
 
-  const isTeacher = userRole === 'teacher' || userPermissions.includes('teacher_portal');
+  const isFaculty = userRole === 'teacher' || userPermissions.includes('teacher_portal');
   const isAdmin = userRole === 'admin';
   const canViewFinances = isAdmin || userPermissions.includes('manage_payments');
 
   try {
-    if (isTeacher && !isAdmin) {
-      // Teacher specific dashboard data
+    if (isFaculty && !isAdmin) {
+      // Faculty specific dashboard data
       const faculty = await prisma.faculty.findUnique({ where: { userId } });
       
       if (!faculty) {
         return NextResponse.json({
-          isTeacher: true,
+          isFaculty: true,
           totalStudents: 0,
           myBatches: 0,
-          upcomingClasses: [],
-          recentSubmissions: []
+          todaysClasses: [],
         });
       }
 
-      const [myBatches, myStudents, timetable] = await Promise.all([
-        prisma.batch.count({ where: { facultyId: faculty.id, status: 'active' } }),
-        prisma.admission.count({ where: { batch: { facultyId: faculty.id }, status: 'active' } }),
-        prisma.timetableSlot.findMany({ 
-          where: { facultyId: faculty.id },
-          include: { batch: { include: { course: true } } }
-        })
-      ]);
+      const activeBatches = await prisma.batch.findMany({
+        where: { facultyId: faculty.id, status: 'active' },
+        include: { course: true, timeSlot: true }
+      });
 
-      const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
-      const todaysClasses = timetable.filter(t => t.day === today);
+      const myStudents = await prisma.admission.count({ 
+        where: { batch: { facultyId: faculty.id }, status: 'active' } 
+      });
+
+      // Filter batches occurring today (simplified check if timeSlot is set)
+      const todaysClasses = activeBatches.filter(b => b.timeSlot);
 
       return NextResponse.json({
-        isTeacher: true,
+        isTeacher: true, // Keep key name for frontend compatibility if needed, but it's Faculty data
         totalStudents: myStudents,
-        myBatches,
+        myBatches: activeBatches.length,
         todaysClasses,
-        timetable
+        activeBatches
       });
     }
 

@@ -404,6 +404,7 @@ model FacultyClockLog {
   totalHours Float?
   latitude   Float?
   longitude  Float?
+  faceImage  String?   @default("")
   createdAt  DateTime  @default(now())
   faculty    Faculty   @relation(fields: [facultyId], references: [id])
 }

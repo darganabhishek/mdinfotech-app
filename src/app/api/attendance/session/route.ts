@@ -11,18 +11,52 @@ export async function POST(req: Request) {
 
   try {
     const body = await req.json();
+    const userId = parseInt(session.user.id);
+    const faculty = await prisma.faculty.findFirst({ where: { userId } });
+    
+    if (!faculty) {
+      return NextResponse.json({ error: 'Only faculty members can start sessions' }, { status: 403 });
+    }
+
     const qrSecret = crypto.randomBytes(32).toString('hex');
+    const batchId = parseInt(body.batchId);
+
+    // Verify batch exists and check time slot
+    const batch = await prisma.batch.findUnique({
+      where: { id: batchId },
+      include: { timeSlot: true }
+    });
+
+    if (!batch) return NextResponse.json({ error: 'Batch not found' }, { status: 404 });
+
+    // Time-slot validation (Simplified: check if current time is within slot)
+    if (batch.timeSlot) {
+      const now = new Date();
+      const currentMinutes = now.getHours() * 60 + now.getMinutes();
+      
+      const [startH, startM] = batch.timeSlot.startTime.split(':').map(Number);
+      const [endH, endM] = batch.timeSlot.endTime.split(':').map(Number);
+      const startMinutes = startH * 60 + startM;
+      const endMinutes = endH * 60 + endM;
+
+      // Allow a 15-minute buffer before and after
+      if (currentMinutes < startMinutes - 15 || currentMinutes > endMinutes + 15) {
+        return NextResponse.json({ 
+          error: `Access Denied: This batch is scheduled for ${batch.timeSlot.startTime} - ${batch.timeSlot.endTime}. Please start the session during your allotted time.` 
+        }, { status: 400 });
+      }
+    }
 
     // Close any existing active sessions for this batch
     await prisma.attendanceSession.updateMany({
-      where: { batchId: parseInt(body.batchId), active: true },
+      where: { batchId, active: true },
       data: { active: false, endTime: new Date() },
     });
 
     const attendanceSession = await prisma.attendanceSession.create({
       data: {
-        batchId: parseInt(body.batchId),
-        facultyId: parseInt(body.facultyId),
+        batchId,
+        facultyId: faculty.id,
         qrSecret,
         latitude: parseFloat(body.latitude) || 0,
         longitude: parseFloat(body.longitude) || 0,

@@ -139,7 +139,7 @@ export default function ScanAttendancePage() {
   return (
     <div>
       <div className="page-header">
-        <div><h2>📱 Scan QR Attendance</h2><p>Scan the QR code shown by your teacher to mark attendance.</p></div>
+        <div><h2>📱 Scan QR Attendance</h2><p>Scan the QR code shown by your faculty to mark attendance.</p></div>
       </div>
 
       <div style={{ textAlign: 'center', maxWidth: '500px', margin: '0 auto' }}>
@@ -200,7 +200,7 @@ export default function ScanAttendancePage() {
         {/* Manual QR Input Fallback */}
         <div className="data-card" style={{ padding: '20px', marginTop: '16px' }}>
           <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '8px' }}>
-            Camera not working? If your browser doesn't support QR scanning, ask your teacher to use manual attendance.
+            Camera not working? If your browser doesn't support QR scanning, ask your faculty to use manual attendance.
           </p>
         </div>
       </div>

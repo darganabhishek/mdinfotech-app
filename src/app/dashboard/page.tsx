@@ -39,7 +39,7 @@ export default function DashboardPage() {
   if (data?.isTeacher) {
     return (
       <>
-        {/* Teacher KPI Cards */}
+      {/* Faculty KPI Cards */}
         <div className="kpi-grid">
           <div className="kpi-card blue">
             <div className="kpi-header">

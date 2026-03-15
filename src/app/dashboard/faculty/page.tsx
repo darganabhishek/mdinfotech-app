@@ -173,7 +173,7 @@ export default function FacultyPage() {
       <div className="page-header">
         <div>
           <h2>Faculty Management</h2>
-          <p>Manage teacher profiles, qualifications, and schedules.</p>
+          <p>Manage faculty profiles, qualifications, and schedules.</p>
         </div>
         <div style={{ display: 'flex', gap: '8px' }}>
           <button className="btn btn-outline" onClick={() => setShowBulk(!showBulk)}>
