@@ -47,18 +47,41 @@ If students don't have devices or for older records, use the manual hub.
 
 ---
 
-## 4. 📚 E-Learning Hub
-Manage the resources and study materials for your courses.
+## 4. 📚 E-Learning & Assignments
+Manage the resources, curriculum, and assignments for your courses.
+
+### A. Topics & Assignments
+1. Navigate to **Academics > Assignments**.
+2. **Manage Topics**: Use "New Topic" to group assignments logically (e.g., "React Hooks", "State Management").
+3. **Locking**: When creating or editing an assignment, you can check the **Lock** option. This hides the assignment details from students until you decide to unlock it.
+4. **Grading**: View student submissions and provide feedback/marks directly from the assignments list.
+
+### B. E-learning Hub
 1. Navigate to **Academics > E-learning Hub**.
-2. **Upload Resources**: Add PDF notes, video links, or assignment descriptions for specific courses.
-3. Your students will see these materials instantly in their respective portals.
+2. **Upload Resources**: Add PDF notes, video links, or reference files for specific courses.
+3. Students see these materials instantly in their "Resources" section.
+
+---
+
+## 5. 📢 Communication & Careers
+
+### A. Notice Board
+1. Navigate to **Academics > Notice Board**.
+2. **Post Notice**: Create important announcements.
+3. **Targeting**: Send notices to **All Students**, a specific **Course**, or even an **Individual Student**.
+4. **Types**: Notices can include text, a **PDF/Document file**, or a **Web Link**.
+
+### B. Jobs Portal
+1. Navigate to **Academics > Jobs Portal**.
+2. **Post Jobs**: Share recent job vacancies or internship opportunities.
+3. Students can view opportunities and apply directly via provided links.
 
 ---
 
 ## 🔒 Security Best Practices
-- **Do not share QR codes**: The attendance QR codes refresh every 10-30 seconds and are location-locked. Encourage students to scan while in the classroom.
-- **Location Permissions**: Always allow the browser to access your location for the Faculty Clock and QR sessions to work correctly.
-- **Secure Logouts**: Always sign out of your account if you are using a shared institute computer.
+- **Do not share QR codes**: The attendance QR codes refresh frequently and are location-locked.
+- **Student Privacy**: Only send personal sensitive notices to specific students using the "Individual" target.
+- **Secure Logouts**: Always sign out of your account on shared devices.
 
 ---
 *For technical support, please contact the Institute Administrator.*
