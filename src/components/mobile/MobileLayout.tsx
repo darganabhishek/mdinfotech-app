@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { FiHome, FiBook, FiActivity, FiUser, FiBell, FiPlus } from 'react-icons/fi';
+import { FiHome, FiBook, FiActivity, FiUser, FiBell, FiPlus, FiUserPlus, FiUsers } from 'react-icons/fi';
 import { useTheme } from '@/context/ThemeContext';
 import { FiSun, FiMoon } from 'react-icons/fi';
 
@@ -34,10 +34,10 @@ export default function MobileLayout({
   const navItems = [
     { href: '/dashboard', label: 'Home', icon: FiHome, permissions: [] },
     { 
-      href: userRole === 'student' ? '/dashboard/student' : '/dashboard/attendance', 
-      label: userRole === 'student' ? 'My Portal' : 'Attendance', 
-      icon: FiActivity, 
-      permissions: ['student_portal', 'faculty_portal', 'manage_students'] 
+      href: userRole === 'student' ? '/dashboard/student' : '/dashboard/admissions', 
+      label: userRole === 'student' ? 'My Portal' : 'Admissions', 
+      icon: userRole === 'student' ? FiActivity : FiUserPlus, 
+      permissions: ['student_portal', 'manage_admissions'] 
     },
     { 
       href: '/dashboard/notices', 
@@ -46,10 +46,10 @@ export default function MobileLayout({
       permissions: ['faculty_portal', 'manage_students', 'student_portal'] 
     },
     { 
-      href: '/dashboard/elearning', 
-      label: 'Library', 
-      icon: FiBook, 
-      permissions: ['faculty_portal', 'student_portal'] 
+      href: '/dashboard/users', 
+      label: 'Users', 
+      icon: FiUsers, 
+      permissions: ['manage_users'] 
     },
   ];
 

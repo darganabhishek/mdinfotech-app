@@ -467,12 +467,22 @@ export default function AdmissionsPage() {
               {admissions.map((a: any) => {
                 const paid = getPaidAmount(a);
                 const balance = a.netFee - paid;
+                const isSelected = selectedAdmissions.includes(a.id);
                 return (
-                  <div key={a.id} className="mobile-data-card">
+                  <div key={a.id} className={`mobile-data-card ${isSelected ? 'selected' : ''}`}>
                     <div className="mobile-data-card-header">
-                      <div>
-                        <div className="mobile-data-card-title">{a.student?.name}</div>
-                        <div className="mobile-data-card-subtitle">{a.student?.enrollmentNo}</div>
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+                        <div onClick={(e) => { e.stopPropagation(); toggleSelectAdmission(a.id); }} style={{ cursor: 'pointer', marginTop: '2px' }}>
+                          {isSelected ? (
+                            <FiCheckSquare style={{ color: 'var(--brand-blue-light)', fontSize: '1.2rem' }} />
+                          ) : (
+                            <FiSquare style={{ color: 'var(--text-muted)', fontSize: '1.2rem' }} />
+                          )}
+                        </div>
+                        <div>
+                          <div className="mobile-data-card-title">{a.student?.name}</div>
+                          <div className="mobile-data-card-subtitle">{a.student?.enrollmentNo}</div>
+                        </div>
                       </div>
                       <span className={`badge badge-${a.status === 'active' ? 'active' : a.status === 'completed' ? 'completed' : a.status === 'pending' ? 'warning' : 'danger'}`}>{a.status}</span>
                     </div>
