@@ -13,7 +13,7 @@ import Providers from '@/components/Providers';
 import { useTheme } from '@/context/ThemeContext';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import MobileLayout from '@/components/mobile/MobileLayout';
-import './mobile.css';
+import '../mobile.css';
 
 const navItems = [
   { section: 'Main', items: [

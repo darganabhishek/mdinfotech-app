@@ -32,6 +32,10 @@ export async function POST(request: Request) {
     const website = process.env.PAYTM_WEBSITE;
     const callbackUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/api/payments/paytm/callback`;
 
+    if (!mid || !mkey || !website) {
+      return NextResponse.json({ error: 'Payment gateway not configured' }, { status: 500 });
+    }
+
     const paytmParams: any = {
       body: {
         requestType: "Payment",
