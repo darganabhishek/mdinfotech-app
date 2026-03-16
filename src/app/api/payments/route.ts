@@ -33,24 +33,73 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth() + 1; // 1-indexed
 
-    // Generate receipt number
-    const count = await prisma.payment.count();
-    const receiptNo = `RCP${new Date().getFullYear()}${String(count + 1).padStart(5, '0')}`;
+    // Determine Financial Year (April to March)
+    let fyStart, fyEnd;
+    if (currentMonth >= 4) {
+      fyStart = `${currentYear}-04-01`;
+      fyEnd = `${currentYear + 1}-03-31`;
+    } else {
+      fyStart = `${currentYear - 1}-04-01`;
+      fyEnd = `${currentYear}-03-31`;
+    }
+
+    const fyLabel = currentMonth >= 4 
+      ? `${currentYear}-${(currentYear + 1).toString().slice(-2)}`
+      : `${currentYear - 1}-${currentYear.toString().slice(-2)}`;
+
+    // Get count of receipts in this financial year
+    const count = await prisma.payment.count({
+      where: {
+        createdAt: {
+          gte: new Date(fyStart),
+          lte: new Date(fyEnd)
+        }
+      }
+    });
+
+    const receiptNo = `MDI/${fyLabel}/${String(count + 1).padStart(4, '0')}`;
+
+    // Auto-generate reference for cash if empty
+    let reference = body.reference || '';
+    if (body.paymentMode === 'cash' && !reference) {
+      reference = `CSH-${Date.now().toString().slice(-6)}`;
+    }
 
     const payment = await prisma.payment.create({
       data: {
         admissionId: body.admissionId,
         amount: body.amount,
-        paymentDate: body.paymentDate || new Date().toISOString().split('T')[0],
+        discount: body.discount || 0,
+        paymentDate: body.paymentDate || now.toISOString().split('T')[0],
         paymentMode: body.paymentMode || 'cash',
         paymentMonth: body.paymentMonth || null,
         receiptNo,
-        reference: body.reference || '',
+        reference,
         notes: body.notes || '',
       },
       include: { admission: { include: { student: true, course: true } } },
     });
+
+    // Update Admission netFee if discount was applied at transaction level?
+    // Usually, we should deduce the balance. 
+    // If the user meant the discount to be PERMANENT, we update admission.
+    // If they meant it just for this payment, it's just recorded.
+    // Based on "student balance reflects both the payment and the discount", 
+    // we should update the admission's cumulative discount or netFee.
+    
+    if (body.discount > 0) {
+      await prisma.admission.update({
+        where: { id: body.admissionId },
+        data: {
+          discount: { increment: body.discount },
+          netFee: { decrement: body.discount }
+        }
+      });
+    }
 
     return NextResponse.json(payment, { status: 201 });
   } catch (error) {

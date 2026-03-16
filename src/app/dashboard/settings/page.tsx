@@ -190,15 +190,17 @@ export default function SettingsPage() {
                     <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Your connection to the database is fully encrypted and secure.</div>
                   </div>
                 </div>
-                <div>
-                  <h4 style={{ marginBottom: 16 }}>Change Password</h4>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                    <input className="form-control" type="password" placeholder="Current Password" />
-                    <input className="form-control" type="password" placeholder="New Password" />
-                    <input className="form-control" type="password" placeholder="Confirm New Password" />
+                {(session?.user as any)?.role !== 'student' && (
+                  <div>
+                    <h4 style={{ marginBottom: 16 }}>Change Password</h4>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                      <input className="form-control" type="password" placeholder="Current Password" />
+                      <input className="form-control" type="password" placeholder="New Password" />
+                      <input className="form-control" type="password" placeholder="Confirm New Password" />
+                    </div>
+                    <button className="btn btn-outline" style={{ marginTop: 16 }}>Update Password</button>
                   </div>
-                  <button className="btn btn-outline" style={{ marginTop: 16 }}>Update Password</button>
-                </div>
+                )}
               </div>
             </div>
           </div>

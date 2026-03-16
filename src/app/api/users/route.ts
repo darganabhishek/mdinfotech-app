@@ -6,7 +6,10 @@ import { hash } from 'bcryptjs';
 
 export async function GET() {
   const session = await getServerSession(authOptions);
-  if (!session || session.user.role !== 'superadmin') {
+  const userRole = (session?.user as any)?.role;
+  const allowedRoles = ['superadmin', 'staff', 'faculty'];
+
+  if (!session || !allowedRoles.includes(userRole)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -30,7 +33,10 @@ export async function GET() {
 
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
-  if (!session || session.user.role !== 'superadmin') {
+  const userRole = (session?.user as any)?.role;
+  const allowedRoles = ['superadmin', 'staff', 'faculty'];
+
+  if (!session || !allowedRoles.includes(userRole)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

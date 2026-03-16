@@ -18,7 +18,7 @@ export default function AnalyticsPage() {
   return (
     <div>
       <div className="page-header">
-        <div><h2>Course Profitability & Analytics</h2><p>Revenue analysis per course with collection rates.</p></div>
+        <div><h2>Time Slot Profitability & Analytics</h2><p>Revenue analysis per time slot with collection rates.</p></div>
       </div>
 
       <div className="kpi-grid" style={{ marginBottom: '24px' }}>
@@ -42,7 +42,7 @@ export default function AnalyticsPage() {
       <div className="data-card">
         <div className="data-table-wrap">
           <table className="data-table">
-            <thead><tr><th>Course</th><th>Students</th><th>Revenue</th><th>Expected</th><th>Collection %</th><th>Active Batches</th></tr></thead>
+            <thead><tr><th>Time Slot / Batch</th><th>Students</th><th>Revenue</th><th>Expected</th><th>Collection %</th><th>Active Batches</th></tr></thead>
             <tbody>
               {data.courses.map((c: any) => (
                 <tr key={c.id}>

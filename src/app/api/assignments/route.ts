@@ -16,6 +16,7 @@ export async function GET(req: Request) {
       include: {
         batch: { include: { course: true } },
         faculty: { select: { name: true } },
+        topic: true,
         _count: { select: { submissions: true } },
       },
       orderBy: { createdAt: 'desc' },
@@ -39,6 +40,8 @@ export async function POST(req: Request) {
         dueDate: body.dueDate,
         batchId: parseInt(body.batchId),
         facultyId: parseInt(body.facultyId),
+        topicId: body.topicId ? parseInt(body.topicId) : null,
+        isLocked: body.isLocked || false,
         attachments: body.attachments || null,
       },
     });

@@ -94,6 +94,7 @@ model Student {
   referrals     Referral[]   @relation("Referrer")
   user          User?        @relation(fields: [userId], references: [id])
   submissions   Submission[]
+  notices       Notice[]
 }
 
 model Course {
@@ -110,6 +111,18 @@ model Course {
   admissions   Admission[]
   batches      Batch[]
   resources    ElearningResource[]
+  topics       Topic[]
+  notices      Notice[]
+}
+
+model Topic {
+  id          Int          @id @default(autoincrement())
+  name        String
+  courseId    Int
+  course      Course       @relation(fields: [courseId], references: [id])
+  assignments Assignment[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
 }
 
 model Batch {
@@ -170,6 +183,7 @@ model Payment {
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
   paymentMonth String?
+  discount     Float     @default(0)
   admission    Admission @relation(fields: [admissionId], references: [id])
 }
 
@@ -268,8 +282,11 @@ model Assignment {
   attachments String?
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
+  topicId     Int?
+  isLocked    Boolean      @default(false)
   batch       Batch        @relation(fields: [batchId], references: [id])
   faculty     Faculty      @relation(fields: [facultyId], references: [id])
+  topic       Topic?       @relation(fields: [topicId], references: [id])
   submissions Submission[]
 }
 
@@ -407,4 +424,31 @@ model FacultyClockLog {
   faceImage  String?   @default("")
   createdAt  DateTime  @default(now())
   faculty    Faculty   @relation(fields: [facultyId], references: [id])
+}
+
+model Notice {
+  id        Int      @id @default(autoincrement())
+  title     String
+  content   String?
+  type      String   @default("text") // text, file, link, document
+  fileUrl   String?
+  link      String?
+  target    String   @default("all") // all, course, student
+  courseId  Int?
+  studentId Int?
+  course    Course?  @relation(fields: [courseId], references: [id])
+  student   Student? @relation(fields: [studentId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model JobPost {
+  id          Int      @id @default(autoincrement())
+  title       String
+  company     String
+  description String
+  location    String?
+  link        String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }

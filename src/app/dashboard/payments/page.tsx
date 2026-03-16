@@ -15,7 +15,15 @@ export default function PaymentsPage() {
   const [importing, setImporting] = useState(false);
   const [admissions, setAdmissions] = useState<any[]>([]);
   const [toast, setToast] = useState<{ type: string; msg: string } | null>(null);
-  const [form, setForm] = useState({ admissionId: 0, amount: 0, paymentDate: new Date().toISOString().split('T')[0], paymentMode: 'cash', reference: '', notes: '' });
+  const [form, setForm] = useState({ 
+    admissionId: 0, 
+    amount: 0, 
+    discount: 0,
+    paymentDate: new Date().toISOString().split('T')[0], 
+    paymentMode: 'cash', 
+    reference: '', 
+    notes: '' 
+  });
 
   const fetchPayments = useCallback(async () => {
     setLoading(true);
@@ -32,15 +40,60 @@ export default function PaymentsPage() {
     const res = await fetch('/api/admissions?limit=200&status=active');
     const data = await res.json();
     setAdmissions(data.admissions || []);
-    setForm({ admissionId: 0, amount: 0, paymentDate: new Date().toISOString().split('T')[0], paymentMode: 'cash', reference: '', notes: '' });
+    setForm({ 
+      admissionId: 0, 
+      amount: 0, 
+      discount: 0,
+      paymentDate: new Date().toISOString().split('T')[0], 
+      paymentMode: 'cash', 
+      reference: '', 
+      notes: '' 
+    });
     setShowModal(true);
+  };
+
+  const handleAdmissionChange = (id: number) => {
+    const admission = admissions.find(a => a.id === id);
+    if (admission) {
+      const paid = (admission.payments || []).reduce((s: number, p: any) => s + p.amount, 0);
+      const balance = admission.netFee - paid;
+      
+      // Auto-populate amount with installment if available, else full balance
+      const suggestedAmount = admission.installmentAmount || balance;
+      
+      setForm({ 
+        ...form, 
+        admissionId: id, 
+        amount: suggestedAmount > 0 ? suggestedAmount : 0 
+      });
+    } else {
+      setForm({ ...form, admissionId: id });
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const res = await fetch('/api/payments', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...form, admissionId: Number(form.admissionId), amount: Number(form.amount) }) });
+    const res = await fetch('/api/payments', { 
+      method: 'POST', 
+      headers: { 'Content-Type': 'application/json' }, 
+      body: JSON.stringify({ 
+        ...form, 
+        admissionId: Number(form.admissionId), 
+        amount: Number(form.amount),
+        discount: Number(form.discount)
+      }) 
+    });
     if (res.ok) { showToast('success', 'Payment recorded!'); setShowModal(false); fetchPayments(); }
     else showToast('error', 'Failed');
+  };
+
+  const getReferenceLabel = () => {
+    switch (form.paymentMode) {
+      case 'upi': return 'UPI Transaction ID';
+      case 'online': return 'Online Payment ID';
+      case 'cheque': return 'Cheque Number';
+      default: return 'Reference / Txn ID';
+    }
   };
 
   const handleDelete = async (id: number) => {
@@ -195,7 +248,7 @@ export default function PaymentsPage() {
             <form onSubmit={handleSubmit}>
               <div className="modal-body">
                 <div className="form-group"><label>Admission *</label>
-                  <select className="form-control" required value={form.admissionId} onChange={e => setForm({ ...form, admissionId: Number(e.target.value) })}>
+                  <select className="form-control" required value={form.admissionId} onChange={e => handleAdmissionChange(Number(e.target.value))}>
                     <option value="">Select Student Admission</option>
                     {admissions.map((a: any) => {
                       const paid = (a.payments || []).reduce((s: number, p: any) => s + p.amount, 0);
@@ -206,7 +259,7 @@ export default function PaymentsPage() {
                 </div>
                 <div className="form-row">
                   <div className="form-group"><label>Amount (₹) *</label><input className="form-control" type="number" required min="1" value={form.amount} onChange={e => setForm({ ...form, amount: Number(e.target.value) })} /></div>
-                  <div className="form-group"><label>Payment Date</label><input className="form-control" type="date" value={form.paymentDate} onChange={e => setForm({ ...form, paymentDate: e.target.value })} /></div>
+                  <div className="form-group"><label>Additional Discount (₹)</label><input className="form-control" type="number" min="0" value={form.discount} onChange={e => setForm({ ...form, discount: Number(e.target.value) })} /></div>
                 </div>
                 <div className="form-row">
                   <div className="form-group"><label>Payment Mode</label>
@@ -214,7 +267,16 @@ export default function PaymentsPage() {
                       <option value="cash">Cash</option><option value="upi">UPI</option><option value="online">Online</option><option value="cheque">Cheque</option>
                     </select>
                   </div>
-                  <div className="form-group"><label>Reference / Txn ID</label><input className="form-control" value={form.reference} onChange={e => setForm({ ...form, reference: e.target.value })} /></div>
+                  <div className="form-group"><label>Payment Date</label><input className="form-control" type="date" value={form.paymentDate} onChange={e => setForm({ ...form, paymentDate: e.target.value })} /></div>
+                </div>
+                <div className="form-group">
+                  <label>{getReferenceLabel()}</label>
+                  <input 
+                    className="form-control" 
+                    value={form.reference} 
+                    placeholder={form.paymentMode === 'cash' ? 'Auto-generated if empty' : ''}
+                    onChange={e => setForm({ ...form, reference: e.target.value })} 
+                  />
                 </div>
                 <div className="form-group"><label>Notes</label><textarea className="form-control" value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} /></div>
               </div>

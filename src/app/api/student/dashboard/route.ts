@@ -50,8 +50,11 @@ export async function GET() {
       : 100;
 
     const courses = student.admissions.map(a => ({
+      admissionId: a.id,
+      courseId: a.courseId,
       name: a.course.name,
       batchName: a.batch?.name || 'Pending/No Batch',
+      batchId: a.batch?.id,
       status: a.status,
       netFee: a.netFee,
       paid: a.payments.reduce((s, p) => s + p.amount, 0),
@@ -63,6 +66,37 @@ export async function GET() {
       status: att.status,
     }));
 
+    // Fetch Notices
+    const courseIds = student.admissions.map(a => a.courseId);
+    const notices = await prisma.notice.findMany({
+      where: {
+        OR: [
+          { target: 'all' },
+          { target: 'course', courseId: { in: courseIds } },
+          { target: 'student', studentId: student.id }
+        ]
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 10
+    });
+
+    // Fetch Job Posts
+    const jobs = await prisma.jobPost.findMany({
+      orderBy: { createdAt: 'desc' },
+      take: 10
+    });
+
+    // Fetch Assignments grouped by Course/Topic
+    const batchIds = student.admissions.map(a => a.batchId).filter(id => id !== null) as number[];
+    const assignments = await prisma.assignment.findMany({
+      where: { batchId: { in: batchIds } },
+      include: { topic: true, faculty: { select: { name: true } } },
+      orderBy: [
+        { topicId: 'asc' },
+        { createdAt: 'desc' }
+      ]
+    });
+
     return NextResponse.json({
       name: student.name,
       enrollmentNo: student.enrollmentNo,
@@ -72,6 +106,9 @@ export async function GET() {
       balanceDue,
       courses,
       recentAttendance,
+      notices,
+      jobs,
+      assignments
     });
   } catch (error) {
     console.error('Student dashboard error:', error);

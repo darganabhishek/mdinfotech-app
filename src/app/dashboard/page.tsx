@@ -264,7 +264,7 @@ export default function DashboardPage() {
       {data?.courseStats && data.courseStats.length > 0 && (
         <div className="data-card">
           <div className="data-card-header">
-            <h3>📊 Course-wise Enrollments</h3>
+            <h3>📊 Time Slot-wise Enrollments</h3>
           </div>
           <div style={{ padding: '24px' }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '12px' }}>

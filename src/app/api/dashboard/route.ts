@@ -17,7 +17,7 @@ export async function GET() {
 
   const isFaculty = userRole === 'faculty' || userPermissions.includes('faculty_portal');
   const isAdmin = userRole === 'admin';
-  const canViewFinances = isAdmin || userPermissions.includes('manage_payments');
+  const canViewFinances = isAdmin;
 
   try {
     if (isFaculty && !isAdmin) {
@@ -129,7 +129,7 @@ export async function GET() {
       totalEnquiries,
       recentPayments: formattedPayments,
       recentAdmissions: formattedAdmissions,
-      courseStats: courseStats.map((c: any) => ({ name: c.code, count: c._count.admissions })),
+      courseStats: canViewFinances ? courseStats.map((c: any) => ({ name: c.code, count: c._count.admissions })) : [],
       revenueTrend,
       canViewFinances
     });

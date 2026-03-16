@@ -21,6 +21,7 @@
     "next-auth": "^4.24.13",
     "otplib": "^13.3.0",
     "papaparse": "^5.5.3",
+    "paytmchecksum": "^1.5.1",
     "qrcode": "^1.5.4",
     "react": "19.2.3",
     "react-chartjs-2": "^5.3.1",

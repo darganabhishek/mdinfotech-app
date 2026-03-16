@@ -57,10 +57,10 @@ export default function ReportsPage() {
 
       {/* Course-wise Report */}
       <div className="data-card" style={{ marginBottom: 28 }}>
-        <div className="data-card-header"><h3>📊 Course-wise Enrollment</h3></div>
+        <div className="data-card-header"><h3>📊 Time Slot-wise Enrollment</h3></div>
         <div className="data-table-wrap pc-only">
           <table className="data-table">
-            <thead><tr><th>Course</th><th>Enrollments</th><th>Trend</th></tr></thead>
+            <thead><tr><th>Time Slot / Batch</th><th>Enrollments</th><th>Trend</th></tr></thead>
             <tbody>
               {(data?.courseStats || []).map((cs: any, i: number) => (
                 <tr key={i}>

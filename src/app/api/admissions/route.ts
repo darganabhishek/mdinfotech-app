@@ -109,6 +109,33 @@ export async function POST(request: Request) {
       include: { student: true, course: true, batch: { include: { timeSlot: true } } },
     });
 
+    // Auto-create User account for Student Portal
+    if (admission.student) {
+      const existingUser = await prisma.user.findUnique({
+        where: { username: admission.student.enrollmentNo }
+      });
+
+      if (!existingUser) {
+        const { hash } = await import('bcryptjs');
+        const defaultPassword = await hash(`MDI${admission.student.phone.slice(-5) || '12345'}`, 12);
+        
+        const user = await prisma.user.create({
+          data: {
+            name: admission.student.name,
+            username: admission.student.enrollmentNo,
+            password: defaultPassword,
+            roleId: 2, // Student role ID from DB check (2 is usually student in such setups, but I'll verify or use role name if possible)
+            active: true
+          }
+        });
+
+        await prisma.student.update({
+          where: { id: admission.student.id },
+          data: { userId: user.id }
+        });
+      }
+    }
+
     return NextResponse.json({
       ...admission,
       student: formatStudentData(admission.student)

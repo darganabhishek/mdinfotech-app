@@ -21,7 +21,7 @@ const navItems = [
     { href: '/dashboard/courses', label: 'Courses', icon: FiBook, permissions: ['manage_courses'] },
     { href: '/dashboard/batches', label: 'Batches', icon: FiLayers, permissions: ['manage_batches'] },
     { href: '/dashboard/admissions', label: 'Admissions', icon: FiUserPlus, permissions: ['manage_admissions'] },
-    { href: '/dashboard/faculty', label: 'Faculty Management', icon: FiUsers, permissions: ['manage_users'] },
+    { href: '/dashboard/faculty', label: 'Faculty Management', icon: FiUsers, permissions: ['manage_users'], isAdminOnly: true },
     { href: '/dashboard/attendance', label: 'Attendance Hub', icon: FiActivity, permissions: ['manage_students', 'faculty_portal'] },
     { href: '/dashboard/resources', label: 'Resources', icon: FiSettings, permissions: ['manage_settings'] },
   ]},
@@ -35,22 +35,25 @@ const navItems = [
     { href: '/dashboard/fees', label: 'Fee Management', icon: FiDollarSign, permissions: ['manage_payments'] },
     { href: '/dashboard/payments', label: 'Payments', icon: FiDollarSign, permissions: ['manage_payments'] },
     { href: '/dashboard/receipts', label: 'Receipts', icon: FiFileText, permissions: ['manage_payments'] },
-    { href: '/dashboard/payroll', label: 'Payroll', icon: FiDollarSign, permissions: ['manage_payments', 'manage_users'] },
-    { href: '/dashboard/analytics', label: 'Course Analytics', icon: FiBarChart2, permissions: ['view_reports'] },
+    { href: '/dashboard/payroll', label: 'Payroll', icon: FiDollarSign, permissions: ['manage_payments', 'manage_users'], isAdminOnly: true },
+    { href: '/dashboard/analytics', label: 'Time Slot Analytics', icon: FiBarChart2, permissions: ['view_reports'], isAdminOnly: true },
     { href: '/dashboard/referrals', label: 'Referral Program', icon: FiUserPlus, permissions: ['manage_admissions'] },
   ]},
   { section: 'Academics', items: [
+    { href: '/dashboard/notices', label: 'Notice Board', icon: FiMessageSquare, permissions: ['faculty_portal', 'manage_students'] },
+    { href: '/dashboard/jobs', label: 'Jobs Portal', icon: FiLayers, permissions: ['faculty_portal', 'manage_students'] },
+    { href: '/dashboard/assignments', label: 'Assignments', icon: FiFileText, permissions: ['faculty_portal', 'manage_students'] },
     { href: '/dashboard/student', label: 'Student Portal', icon: FiBook, permissions: ['student_portal'] },
     { href: '/dashboard/elearning', label: 'E-learning Hub', icon: FiFileText, permissions: ['faculty_portal', 'student_portal', 'manage_courses'] },
   ]},
   { section: 'Other', items: [
     { href: '/dashboard/enquiries', label: 'Enquiries', icon: FiMessageSquare, permissions: ['manage_admissions'] },
     { href: '/dashboard/certificates', label: 'Certificates', icon: FiAward, permissions: ['manage_students'] },
-    { href: '/dashboard/reports', label: 'Reports', icon: FiBarChart2, permissions: ['view_reports'] },
-    { href: '/dashboard/settings', label: 'Settings', icon: FiSettings, permissions: ['manage_settings'] },
-    { href: '/dashboard/users', label: 'User Accounts', icon: FiUsers, permissions: ['manage_users'] },
-    { href: '/dashboard/settings/roles', label: 'Role Management', icon: FiShield, permissions: ['manage_settings'] },
-    { href: '/dashboard/logs', label: 'Audit Logs', icon: FiActivity, permissions: ['manage_settings'] },
+    { href: '/dashboard/reports', label: 'Reports', icon: FiBarChart2, permissions: ['view_reports'], isAdminOnly: true },
+    { href: '/dashboard/settings', label: 'Settings', icon: FiSettings, permissions: ['manage_settings'], isAdminOnly: true },
+    { href: '/dashboard/users', label: 'User Accounts', icon: FiUsers, permissions: ['manage_users'], isAdminOnly: true },
+    { href: '/dashboard/settings/roles', label: 'Role Management', icon: FiShield, permissions: ['manage_settings'], isAdminOnly: true },
+    { href: '/dashboard/logs', label: 'Audit Logs', icon: FiActivity, permissions: ['manage_settings'], isAdminOnly: true },
   ]},
 ];
 
@@ -75,18 +78,19 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
     }
   }, [session]);
 
-  const userRole = dbRole || (session?.user as any)?.role || 'staff';
+  const userRole = (dbRole || (session?.user as any)?.role || 'staff').toLowerCase();
   const userPermissions = dbPermissions || (session?.user as any)?.permissions || [];
 
-  const hasPermission = (permissions?: string[]) => {
+  const hasPermission = (permissions?: string[], isAdminOnly?: boolean) => {
     if (userRole === 'admin' || userRole === 'superadmin') return true;
+    if (isAdminOnly) return false;
     if (!permissions || permissions.length === 0) return true;
     return permissions.some(p => userPermissions.includes(p));
   };
 
   const filteredNavItems = navItems.map(section => ({
     ...section,
-    items: section.items.filter(item => item.href === '/dashboard' || hasPermission(item.permissions))
+    items: section.items.filter(item => item.href === '/dashboard' || hasPermission(item.permissions, (item as any).isAdminOnly))
   })).filter(section => section.items.length > 0);
 
   const getPageTitle = () => {
