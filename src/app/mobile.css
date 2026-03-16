@@ -1,0 +1,138 @@
+/* Mobile-First CSS Variables and Layout */
+:root {
+  --safe-area-top: env(safe-area-inset-top, 0px);
+  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+  --mobile-nav-height: 64px;
+  --mobile-header-height: 56px;
+}
+
+.mobile-layout {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  height: -webkit-fill-available;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  overflow: hidden;
+  position: relative;
+}
+
+.mobile-header {
+  height: calc(var(--mobile-header-height) + var(--safe-area-top));
+  padding-top: var(--safe-area-top);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-left: 16px;
+  padding-right: 16px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color);
+  backdrop-filter: blur(10px);
+  z-index: 100;
+  position: sticky;
+  top: 0;
+}
+
+.mobile-header h1 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mobile-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  padding-bottom: calc(var(--mobile-nav-height) + 24px + var(--safe-area-bottom));
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Bottom Navigation */
+.mobile-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: calc(var(--mobile-nav-height) + var(--safe-area-bottom));
+  padding-bottom: var(--safe-area-bottom);
+  background: rgba(var(--bg-secondary-rgb, 255, 255, 255), 0.85);
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  z-index: 1000; /* Increased z-index */
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+}
+
+.mobile-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 500;
+  transition: all var(--transition-fast);
+  flex: 1;
+  height: 100%;
+}
+
+.mobile-nav-item.active {
+  color: var(--brand-blue-light);
+}
+
+.mobile-nav-icon {
+  font-size: 22px;
+}
+
+/* Floating Action Button */
+.mobile-fab {
+  position: fixed;
+  right: 16px;
+  bottom: calc(var(--mobile-nav-height) + 16px + var(--safe-area-bottom));
+  width: 56px;
+  height: 56px;
+  border-radius: 28px;
+  background: var(--gradient-brand);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-lg);
+  z-index: 90;
+  font-size: 24px;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.2s active;
+}
+
+.mobile-fab:active {
+  transform: scale(0.9);
+}
+
+/* Mobile Cards */
+.mobile-card {
+  background: var(--bg-card);
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 12px;
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Screen Title */
+.screen-title {
+  font-size: 20px;
+  font-weight: 800;
+  margin-bottom: 4px;
+}
+
+.screen-subtitle {
+  font-size: 14px;
+  color: var(--text-muted);
+  margin-bottom: 20px;
+}

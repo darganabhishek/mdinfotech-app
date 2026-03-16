@@ -26,7 +26,26 @@ export async function GET() {
     const roleName = dbUser.role?.name || 'staff';
     const permissions = dbUser.role?.permissions.map((p: any) => p.name) || [];
 
-    return NextResponse.json({ role: roleName, permissions });
+    let isEnrolled = false;
+    let studentId = null;
+
+    if (roleName.toLowerCase() === 'student') {
+      const student = await prisma.student.findUnique({
+        where: { userId: dbUser.id },
+        include: { admissions: { take: 1 } }
+      });
+      if (student) {
+        studentId = student.id;
+        isEnrolled = student.admissions.length > 0;
+      }
+    }
+
+    return NextResponse.json({ 
+      role: roleName, 
+      permissions,
+      isEnrolled,
+      studentId
+    });
   } catch (error) {
     console.error('Error fetching user permissions:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

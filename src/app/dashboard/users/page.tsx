@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { FiUsers, FiPlus, FiEdit2, FiTrash2, FiKey, FiLock, FiX, FiDownload } from 'react-icons/fi';
+import { FiUsers, FiPlus, FiEdit2, FiTrash2, FiKey, FiLock, FiX, FiDownload, FiCheckSquare, FiSquare } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import BulkActions from '@/components/dashboard/BulkActions';
 
@@ -25,6 +25,7 @@ export default function UsersPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [showBulk, setShowBulk] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [selectedUsers, setSelectedUsers] = useState<number[]>([]);
   const [formData, setFormData] = useState({
     name: '',
     username: '',
@@ -36,6 +37,20 @@ export default function UsersPage() {
   useEffect(() => {
     fetchData();
   }, []);
+
+  const toggleSelectUser = (id: number) => {
+    setSelectedUsers(prev => 
+      prev.includes(id) ? prev.filter(uId => uId !== id) : [...prev, id]
+    );
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedUsers.length === users.length) {
+      setSelectedUsers([]);
+    } else {
+      setSelectedUsers(users.map(u => u.id));
+    }
+  };
 
   const fetchData = async () => {
     try {
@@ -153,10 +168,25 @@ export default function UsersPage() {
         <BulkActions type="users" onComplete={fetchData} />
       )}
       <div className="data-card">
+        {selectedUsers.length > 0 && (
+          <div style={{ padding: '8px 16px', background: 'var(--brand-blue-alpha)', borderBottom: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '13px' }}>
+            <span><strong>{selectedUsers.length}</strong> users selected</span>
+            <button className="btn btn-sm btn-outline" onClick={() => setSelectedUsers([])}>Clear Selection</button>
+          </div>
+        )}
         <div className="data-table-wrap">
           <table className="data-table">
             <thead>
               <tr>
+                <th style={{ width: '40px' }}>
+                  <div onClick={toggleSelectAll} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {selectedUsers.length > 0 && selectedUsers.length === users.length ? (
+                      <FiCheckSquare style={{ color: 'var(--brand-blue-light)' }} />
+                    ) : (
+                      <FiSquare />
+                    )}
+                  </div>
+                </th>
                 <th>Name</th>
                 <th>Username</th>
                 <th>Role</th>
@@ -165,11 +195,22 @@ export default function UsersPage() {
               </tr>
             </thead>
             <tbody>
-              {users.map((user) => (
-                <tr key={user.id}>
-                  <td>
-                    <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{user.name}</div>
-                  </td>
+              {users.map((user) => {
+                const isSelected = selectedUsers.includes(user.id);
+                return (
+                  <tr key={user.id} className={isSelected ? 'selected-row' : ''}>
+                    <td style={{ textAlign: 'center' }}>
+                      <div onClick={() => toggleSelectUser(user.id)} style={{ cursor: 'pointer', display: 'inline-flex' }}>
+                        {isSelected ? (
+                          <FiCheckSquare style={{ color: 'var(--brand-blue-light)' }} />
+                        ) : (
+                          <FiSquare style={{ color: 'var(--text-muted)' }} />
+                        )}
+                      </div>
+                    </td>
+                    <td>
+                      <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{user.name}</div>
+                    </td>
                   <td>{user.username}</td>
                   <td>
                     <span className="badge badge-info">
@@ -192,7 +233,7 @@ export default function UsersPage() {
                     </div>
                   </td>
                 </tr>
-              ))}
+              )})}
             </tbody>
           </table>
         </div>

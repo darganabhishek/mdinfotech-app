@@ -11,16 +11,32 @@ export async function GET(request: Request) {
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '20');
 
+    const all = searchParams.get('all') === 'true';
+    const hasAdmission = searchParams.get('hasAdmission');
+
     const where: any = {};
     if (search) {
       where.OR = [
-        { name: { contains: search } },
-        { phone: { contains: search } },
-        { enrollmentNo: { contains: search } },
-        { email: { contains: search } },
+        { name: { contains: search, mode: 'insensitive' } },
+        { phone: { contains: search, mode: 'insensitive' } },
+        { enrollmentNo: { contains: search, mode: 'insensitive' } },
+        { email: { contains: search, mode: 'insensitive' } },
       ];
     }
     if (status) where.status = status;
+    
+    // Default: Show only students WITHOUT admissions (Leads)
+    // If hasAdmission is provided, filter based on that
+    if (!all) {
+      if (hasAdmission === 'true') {
+        where.admissions = { some: {} };
+      } else if (hasAdmission === 'false') {
+        where.admissions = { none: {} };
+      } else {
+        // DEFAULT behavior: show only leads
+        where.admissions = { none: {} };
+      }
+    }
 
     const [students, total] = await Promise.all([
       prisma.student.findMany({

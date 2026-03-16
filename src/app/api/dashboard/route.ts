@@ -16,10 +16,71 @@ export async function GET() {
   const userPermissions = (session.user as any).permissions || [];
 
   const isFaculty = userRole === 'faculty' || userPermissions.includes('faculty_portal');
-  const isAdmin = userRole === 'admin';
+  const isStudent = userRole === 'student' || userPermissions.includes('student_portal');
+  const isAdmin = userRole === 'admin' || userRole === 'superadmin';
   const canViewFinances = isAdmin;
 
   try {
+    if (isStudent && !isAdmin) {
+      // Student specific dashboard data
+      const student = await prisma.student.findUnique({ 
+        where: { userId },
+        include: { 
+          admissions: {
+            where: { status: 'active' },
+            include: { course: true, batch: { include: { timeSlot: true } }, payments: true }
+          }
+        }
+      });
+
+      if (!student) {
+        return NextResponse.json({ isStudent: true, activeAdmissions: 0, totalPaid: 0, pendingFees: 0, courses: [] });
+      }
+
+      let totalPaid = 0;
+      let totalNetFee = 0;
+      
+      const courses = student.admissions.map(adm => {
+        const paid = adm.payments.reduce((s, p) => s + p.amount, 0);
+        totalPaid += paid;
+        totalNetFee += adm.netFee;
+        return {
+          id: adm.id,
+          name: adm.course?.name,
+          code: adm.course?.code,
+          batch: adm.batch?.name,
+          timing: adm.batch?.timeSlot?.label,
+          paid,
+          balance: Math.max(0, adm.netFee - paid),
+          status: adm.status
+        };
+      });
+
+      // Get latest notices for student
+      const recentNotices = await prisma.notice.findMany({
+        where: { 
+          OR: [
+            { target: 'all' },
+            { target: 'student', studentId: student.id },
+            { target: 'course', courseId: { in: student.admissions.map(a => a.courseId) } }
+          ]
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 3
+      });
+
+      return NextResponse.json({
+        isStudent: true,
+        studentName: student.name,
+        enrollmentNo: student.enrollmentNo,
+        activeAdmissions: student.admissions.length,
+        totalPaid,
+        pendingFees: Math.max(0, totalNetFee - totalPaid),
+        courses,
+        recentNotices
+      });
+    }
+
     if (isFaculty && !isAdmin) {
       // Faculty specific dashboard data
       const faculty = await prisma.faculty.findUnique({ where: { userId } });

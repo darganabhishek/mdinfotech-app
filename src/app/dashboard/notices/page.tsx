@@ -3,6 +3,9 @@
 import { useState, useEffect } from 'react';
 import { FiPlus, FiTrash2, FiSend, FiFileText, FiLink, FiUser, FiInfo } from 'react-icons/fi';
 import toast from 'react-hot-toast';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
+import MobileNoticeBoard from '@/components/academics/MobileNoticeBoard';
+import BottomSheet from '@/components/mobile/BottomSheet';
 
 export default function NoticeManagementPage() {
   const [notices, setNotices] = useState([]);
@@ -20,6 +23,7 @@ export default function NoticeManagementPage() {
     fileUrl: '',
     link: ''
   });
+  const isMobile = useMediaQuery('(max-width: 768px)');
 
   useEffect(() => {
     fetchData();
@@ -67,6 +71,102 @@ export default function NoticeManagementPage() {
   };
 
   if (loading && notices.length === 0) return <div className="page-loading"><div className="loading-spinner" /></div>;
+
+  if (isMobile) {
+    return (
+      <div className="mobile-notices">
+        <MobileNoticeBoard 
+          notices={notices} 
+          isFaculty={true} 
+          onDelete={async (id) => {
+            if (confirm('Delete this notice?')) {
+              await fetch(`/api/notices/${id}`, { method: 'DELETE' });
+              fetchData();
+            }
+          }} 
+        />
+        
+        <BottomSheet 
+          isOpen={isModalOpen} 
+          onClose={() => setIsModalOpen(false)}
+          title="Create New Notice"
+        >
+          <form onSubmit={handleSubmit}>
+            <div className="form-group">
+              <label>Title</label>
+              <input className="form-control" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} required />
+            </div>
+            <div className="form-group">
+              <label>Content</label>
+              <textarea className="form-control" rows={3} value={formData.content} onChange={e => setFormData({...formData, content: e.target.value})} />
+            </div>
+            <div className="form-row">
+              <div className="form-group">
+                <label>Type</label>
+                <select className="form-control" value={formData.type} onChange={e => setFormData({...formData, type: e.target.value})}>
+                  <option value="text">Message</option>
+                  <option value="file">File</option>
+                  <option value="link">Link</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label>Audience</label>
+                <select className="form-control" value={formData.target} onChange={e => setFormData({...formData, target: e.target.value})}>
+                  <option value="all">All</option>
+                  <option value="course">Course</option>
+                  <option value="student">Student</option>
+                </select>
+              </div>
+            </div>
+
+            {formData.target === 'course' && (
+              <div className="form-group">
+                <label>Course</label>
+                <select className="form-control" value={formData.courseId} onChange={e => setFormData({...formData, courseId: e.target.value})} required>
+                  <option value="">Choose Course...</option>
+                  {courses.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+              </div>
+            )}
+
+            {formData.target === 'student' && (
+              <div className="form-group">
+                <label>Student</label>
+                <select className="form-control" value={formData.studentId} onChange={e => setFormData({...formData, studentId: e.target.value})} required>
+                  <option value="">Choose Student...</option>
+                  {students.map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                </select>
+              </div>
+            )}
+
+            {formData.type === 'file' && (
+              <div className="form-group">
+                <input className="form-control" placeholder="File URL" value={formData.fileUrl} onChange={e => setFormData({...formData, fileUrl: e.target.value})} />
+              </div>
+            )}
+
+            {formData.type === 'link' && (
+              <div className="form-group">
+                <input className="form-control" placeholder="Link" value={formData.link} onChange={e => setFormData({...formData, link: e.target.value})} />
+              </div>
+            )}
+
+            <button type="submit" className="btn btn-primary btn-block" style={{ marginTop: 20, height: 48 }} disabled={loading}>
+              <FiSend /> {loading ? 'Posting...' : 'Post Notice'}
+            </button>
+          </form>
+        </BottomSheet>
+
+        {/* FAB already in layout, but we need to trigger the modal */}
+        {/* We can use a local FAB or rely on the Layout one if we provide a way to trigger it */}
+        {!isModalOpen && (
+          <button className="mobile-fab" onClick={() => setIsModalOpen(true)}>
+            <FiPlus />
+          </button>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="admin-notices">

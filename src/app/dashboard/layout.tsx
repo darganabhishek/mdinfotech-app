@@ -7,10 +7,13 @@ import { useState, useEffect } from 'react';
 import {
   FiHome, FiUsers, FiBook, FiLayers, FiUserPlus, FiDollarSign,
   FiFileText, FiMessageSquare, FiBarChart2, FiSettings, FiLogOut,
-  FiMenu, FiX, FiAward, FiActivity, FiSun, FiMoon, FiShield
+  FiMenu, FiX, FiAward, FiActivity, FiSun, FiMoon, FiShield, FiBell
 } from 'react-icons/fi';
 import Providers from '@/components/Providers';
 import { useTheme } from '@/context/ThemeContext';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
+import MobileLayout from '@/components/mobile/MobileLayout';
+import './mobile.css';
 
 const navItems = [
   { section: 'Main', items: [
@@ -52,6 +55,7 @@ const navItems = [
     { href: '/dashboard/reports', label: 'Reports', icon: FiBarChart2, permissions: ['view_reports'], isAdminOnly: true },
     { href: '/dashboard/settings', label: 'Settings', icon: FiSettings, permissions: ['manage_settings'], isAdminOnly: true },
     { href: '/dashboard/users', label: 'User Accounts', icon: FiUsers, permissions: ['manage_users'], isAdminOnly: true },
+    { href: '/dashboard/users/students', label: 'Student Accounts', icon: FiUsers, permissions: ['manage_users'], isAdminOnly: true },
     { href: '/dashboard/settings/roles', label: 'Role Management', icon: FiShield, permissions: ['manage_settings'], isAdminOnly: true },
     { href: '/dashboard/logs', label: 'Audit Logs', icon: FiActivity, permissions: ['manage_settings'], isAdminOnly: true },
   ]},
@@ -65,6 +69,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
 
   const [dbRole, setDbRole] = useState<string | null>(null);
   const [dbPermissions, setDbPermissions] = useState<string[] | null>(null);
+  const [isEnrolled, setIsEnrolled] = useState<boolean>(true); // Default true for non-students
 
   useEffect(() => {
     if (session?.user) {
@@ -73,6 +78,9 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
         .then(data => {
           if (data.role) setDbRole(data.role);
           if (data.permissions) setDbPermissions(data.permissions);
+          if (data.role?.toLowerCase() === 'student') {
+            setIsEnrolled(data.isEnrolled);
+          }
         })
         .catch(console.error);
     }
@@ -81,7 +89,12 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
   const userRole = (dbRole || (session?.user as any)?.role || 'staff').toLowerCase();
   const userPermissions = dbPermissions || (session?.user as any)?.permissions || [];
 
-  const hasPermission = (permissions?: string[], isAdminOnly?: boolean) => {
+  const hasPermission = (permissions?: string[], isAdminOnly?: boolean, href?: string) => {
+    // Special check for Student Portal
+    if (href === '/dashboard/student' && userRole === 'student' && !isEnrolled) {
+      return false;
+    }
+
     if (userRole === 'admin' || userRole === 'superadmin') return true;
     if (isAdminOnly) return false;
     if (!permissions || permissions.length === 0) return true;
@@ -90,8 +103,10 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
 
   const filteredNavItems = navItems.map(section => ({
     ...section,
-    items: section.items.filter(item => item.href === '/dashboard' || hasPermission(item.permissions, (item as any).isAdminOnly))
+    items: section.items.filter(item => item.href === '/dashboard' || hasPermission(item.permissions, (item as any).isAdminOnly, item.href))
   })).filter(section => section.items.length > 0);
+
+  const isMobile = useMediaQuery('(max-width: 1024px)'); // High-density screens often report > 768px
 
   const getPageTitle = () => {
     for (const section of navItems) {
@@ -102,6 +117,19 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
     if (pathname?.includes('/receipts/')) return 'Payment Receipt';
     return 'Dashboard';
   };
+
+  if (isMobile) {
+    return (
+      <MobileLayout
+        userRole={userRole}
+        userPermissions={userPermissions}
+        pageTitle={getPageTitle()}
+        userName={session?.user?.name || undefined}
+      >
+        {children}
+      </MobileLayout>
+    );
+  }
 
   return (
     <div className="dashboard-layout">

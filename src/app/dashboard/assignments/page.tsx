@@ -3,6 +3,9 @@
 import { useState, useEffect } from 'react';
 import { FiPlus, FiTrash2, FiEdit, FiLock, FiUnlock, FiLayers, FiX, FiCheckCircle } from 'react-icons/fi';
 import toast from 'react-hot-toast';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
+import MobileAssignments from '@/components/academics/MobileAssignments';
+import BottomSheet from '@/components/mobile/BottomSheet';
 
 export default function AssignmentsManagementPage() {
   const [assignments, setAssignments] = useState([]);
@@ -14,6 +17,21 @@ export default function AssignmentsManagementPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isTopicModalOpen, setIsTopicModalOpen] = useState(false);
   const [activeCourseId, setActiveCourseId] = useState('');
+  const isMobile = useMediaQuery('(max-width: 768px)');
+
+  const toggleLock = async (id: string, isLocked: boolean) => {
+    try {
+      const res = await fetch(`/api/assignments/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isLocked })
+      });
+      if (res.ok) {
+        toast.success(isLocked ? 'Assignment locked' : 'Assignment unlocked');
+        fetchData();
+      }
+    } catch { toast.error('Error updating status'); }
+  };
 
   const [formData, setFormData] = useState({
     title: '', description: '', dueDate: '', 
@@ -87,6 +105,100 @@ export default function AssignmentsManagementPage() {
   };
 
   if (loading && assignments.length === 0) return <div className="page-loading"><div className="loading-spinner" /></div>;
+
+  if (isMobile) {
+    return (
+      <div className="mobile-assignments">
+        <MobileAssignments 
+          assignments={assignments} 
+          isFaculty={true} 
+          onDelete={async (id) => {
+            if (confirm('Delete this assignment?')) {
+              await fetch(`/api/assignments/${id}`, { method: 'DELETE' });
+              fetchData();
+            }
+          }}
+          onToggleLock={toggleLock}
+        />
+        
+        <BottomSheet 
+          isOpen={isModalOpen} 
+          onClose={() => setIsModalOpen(false)}
+          title="Create Assignment"
+        >
+          <form onSubmit={handleAssignmentSubmit}>
+            <div className="form-group">
+              <label>Title</label>
+              <input className="form-control" required value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} />
+            </div>
+            <div className="form-group">
+              <label>Description</label>
+              <textarea className="form-control" rows={3} value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} />
+            </div>
+            <div className="form-group">
+              <label>Batch</label>
+              <select className="form-control" required value={formData.batchId} onChange={e => setFormData({...formData, batchId: e.target.value})}>
+                <option value="">Select Batch...</option>
+                {batches.map((b: any) => <option key={b.id} value={b.id}>{b.name} ({b.course?.code})</option>)}
+              </select>
+            </div>
+            <div className="form-row">
+              <div className="form-group">
+                <label>Due Date</label>
+                <input type="date" className="form-control" required value={formData.dueDate} onChange={e => setFormData({...formData, dueDate: e.target.value})} />
+              </div>
+              <div className="form-group">
+                <label>Topic</label>
+                <select className="form-control" value={formData.topicId} onChange={e => setFormData({...formData, topicId: e.target.value})}>
+                  <option value="">General</option>
+                  {topics.map((t: any) => <option key={t.id} value={t.id}>{t.name} ({t.course?.code})</option>)}
+                </select>
+              </div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '16px 0' }}>
+              <input type="checkbox" id="mob-locked" checked={formData.isLocked} onChange={e => setFormData({...formData, isLocked: e.target.checked})} />
+              <label htmlFor="mob-locked">Lock initially</label>
+            </div>
+            <button type="submit" className="btn btn-primary btn-block" style={{ height: 48 }} disabled={loading}>
+              {loading ? 'Creating...' : 'Create Assignment'}
+            </button>
+          </form>
+        </BottomSheet>
+
+        <BottomSheet 
+          isOpen={isTopicModalOpen} 
+          onClose={() => setIsTopicModalOpen(false)}
+          title="Add New Topic"
+        >
+          <form onSubmit={handleTopicSubmit}>
+            <div className="form-group">
+              <label>Topic Name</label>
+              <input className="form-control" required value={topicData.name} onChange={e => setTopicData({...topicData, name: e.target.value})} />
+            </div>
+            <div className="form-group">
+              <label>Course</label>
+              <select className="form-control" required value={topicData.courseId} onChange={e => setTopicData({...topicData, courseId: e.target.value})}>
+                <option value="">Select Course...</option>
+                {courses.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            </div>
+            <button type="submit" className="btn btn-primary btn-block" style={{ marginTop: 20, height: 48 }} disabled={loading}>
+              {loading ? 'Adding...' : 'Add Topic'}
+            </button>
+          </form>
+        </BottomSheet>
+
+        <div style={{ position: 'fixed', right: 16, bottom: 'calc(var(--mobile-nav-height) + 16px)', display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <button className="mobile-fab" style={{ background: 'var(--bg-secondary)', color: 'var(--brand-blue-light)', width: 48, height: 48 }} onClick={() => setIsTopicModalOpen(true)}>
+            <FiLayers />
+          </button>
+          <button className="mobile-fab" onClick={() => setIsModalOpen(true)}>
+            <FiPlus />
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="admin-assignments">

@@ -1,6 +1,9 @@
 'use client';
 import { useEffect, useState, useCallback } from 'react';
-import { FiSearch, FiDollarSign, FiClock, FiCheckCircle, FiFileText } from 'react-icons/fi';
+import { FiSearch, FiDollarSign, FiClock, FiCheckCircle, FiFileText, FiX } from 'react-icons/fi';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
+import MobileFeeManagement from '@/components/finance/MobileFeeManagement';
+import BottomSheet from '@/components/mobile/BottomSheet';
 
 export default function FeeManagementPage() {
   const [activeTab, setActiveTab] = useState('active'); // active, dropped, completed
@@ -16,6 +19,7 @@ export default function FeeManagementPage() {
 
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [selectedHistoryAdm, setSelectedHistoryAdm] = useState<any>(null);
+  const isMobile = useMediaQuery('(max-width: 768px)');
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -76,6 +80,81 @@ export default function FeeManagementPage() {
     setSelectedHistoryAdm(adm);
     setShowHistoryModal(true);
   };
+
+  if (isMobile) {
+    return (
+      <div className="mobile-fees">
+        <MobileFeeManagement 
+          data={feesData}
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          onPay={openPaymentModal}
+          onHistory={openHistoryModal}
+          search={search}
+          onSearchChange={setSearch}
+        />
+
+        <BottomSheet 
+          isOpen={showPaymentModal && !!selectedAdm} 
+          onClose={() => setShowPaymentModal(false)}
+          title={`Pay - ${selectedAdm?.student?.name}`}
+        >
+          <div style={{ background: 'var(--bg-secondary)', padding: 12, borderRadius: 12, marginBottom: 16, display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
+            <span>Remaining: <strong>₹{selectedAdm?.remainingFee.toLocaleString()}</strong></span>
+            <span>Due: <strong>₹{selectedAdm?.nextDueAmount.toLocaleString()}</strong></span>
+          </div>
+          <form onSubmit={handlePaySubmit}>
+            <div className="form-group">
+              <label>Amount (₹)</label>
+              <input type="number" className="form-control" required value={payForm.amount} onChange={e => setPayForm({...payForm, amount: e.target.value})} />
+            </div>
+            <div className="form-row">
+              <div className="form-group">
+                <label>Mode</label>
+                <select className="form-control" required value={payForm.paymentMode} onChange={e => setPayForm({...payForm, paymentMode: e.target.value})}>
+                  <option value="cash">Cash</option>
+                  <option value="upi">UPI / Online</option>
+                  <option value="bank">Bank</option>
+                  <option value="cheque">Cheque</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label>Date</label>
+                <input type="date" className="form-control" required value={payForm.paymentDate} onChange={e => setPayForm({...payForm, paymentDate: e.target.value})} />
+              </div>
+            </div>
+            <button type="submit" className="btn btn-primary btn-block" style={{ height: 48, marginTop: 12 }}>
+              <FiDollarSign /> Record Payment
+            </button>
+          </form>
+        </BottomSheet>
+
+        <BottomSheet 
+          isOpen={showHistoryModal && !!selectedHistoryAdm} 
+          onClose={() => setShowHistoryModal(false)}
+          title="Payment History"
+        >
+          <div style={{ maxHeight: '60vh', overflowY: 'auto' }}>
+            {selectedHistoryAdm?.payments?.length > 0 ? (
+              selectedHistoryAdm.payments.map((p: any) => (
+                <div key={p.id} style={{ padding: '12px 0', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <div style={{ fontWeight: 700, color: 'var(--success)' }}>₹{p.amount.toLocaleString()}</div>
+                    <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{new Date(p.paymentDate).toLocaleDateString()} • {p.receiptNo}</div>
+                  </div>
+                  <a href={`/dashboard/receipts/${p.id}`} className="btn btn-sm btn-outline">
+                    <FiFileText /> Receipt
+                  </a>
+                </div>
+              ))
+            ) : (
+              <div style={{ padding: 20, textAlign: 'center', color: 'var(--text-muted)' }}>No history found</div>
+            )}
+          </div>
+        </BottomSheet>
+      </div>
+    );
+  }
 
   return (
     <>

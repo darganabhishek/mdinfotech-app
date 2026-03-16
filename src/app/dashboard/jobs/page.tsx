@@ -3,6 +3,9 @@
 import { useState, useEffect } from 'react';
 import { FiPlus, FiTrash2, FiBriefcase, FiMapPin, FiExternalLink, FiX } from 'react-icons/fi';
 import toast from 'react-hot-toast';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
+import MobileJobsPortal from '@/components/academics/MobileJobsPortal';
+import BottomSheet from '@/components/mobile/BottomSheet';
 
 export default function JobsManagementPage() {
   const [jobs, setJobs] = useState([]);
@@ -15,6 +18,7 @@ export default function JobsManagementPage() {
     location: '',
     link: ''
   });
+  const isMobile = useMediaQuery('(max-width: 768px)');
 
   useEffect(() => {
     fetchJobs();
@@ -56,6 +60,63 @@ export default function JobsManagementPage() {
   };
 
   if (loading && jobs.length === 0) return <div className="page-loading"><div className="loading-spinner" /></div>;
+
+  if (isMobile) {
+    return (
+      <div className="mobile-jobs">
+        <MobileJobsPortal 
+          jobs={jobs} 
+          isFaculty={true} 
+          onDelete={async (id) => {
+            if (confirm('Delete this job post?')) {
+              await fetch(`/api/jobs/${id}`, { method: 'DELETE' });
+              fetchJobs();
+            }
+          }} 
+        />
+        
+        <BottomSheet 
+          isOpen={isModalOpen} 
+          onClose={() => setIsModalOpen(false)}
+          title="Post Job Opportunity"
+        >
+          <form onSubmit={handleSubmit}>
+            <div className="form-group">
+              <label>Job Title</label>
+              <input className="form-control" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} placeholder="e.g. Web Developer" required />
+            </div>
+            <div className="form-group">
+              <label>Company</label>
+              <input className="form-control" value={formData.company} onChange={e => setFormData({...formData, company: e.target.value})} placeholder="Company Name" required />
+            </div>
+            <div className="form-row">
+              <div className="form-group">
+                <label>Location</label>
+                <input className="form-control" value={formData.location} onChange={e => setFormData({...formData, location: e.target.value})} placeholder="e.g. Remote" />
+              </div>
+              <div className="form-group">
+                <label>Link</label>
+                <input className="form-control" value={formData.link} onChange={e => setFormData({...formData, link: e.target.value})} placeholder="https://..." />
+              </div>
+            </div>
+            <div className="form-group">
+              <label>Description</label>
+              <textarea className="form-control" rows={4} value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} placeholder="Job description..." required />
+            </div>
+            <button type="submit" className="btn btn-primary btn-block" style={{ marginTop: 20, height: 48 }} disabled={loading}>
+              {loading ? 'Posting...' : 'Post Job'}
+            </button>
+          </form>
+        </BottomSheet>
+
+        {!isModalOpen && (
+          <button className="mobile-fab" onClick={() => setIsModalOpen(true)}>
+            <FiPlus />
+          </button>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="admin-jobs">

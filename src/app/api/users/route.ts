@@ -4,7 +4,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { hash } from 'bcryptjs';
 
-export async function GET() {
+export async function GET(req: Request) {
   const session = await getServerSession(authOptions);
   const userRole = (session?.user as any)?.role;
   const allowedRoles = ['superadmin', 'staff', 'faculty'];
@@ -14,7 +14,18 @@ export async function GET() {
   }
 
   try {
+    const { searchParams } = new URL(req.url); // Use query params for filtering
+    const roleName = searchParams.get('role');
+    
+    const where: any = {};
+    if (roleName) {
+      where.role = {
+        name: { equals: roleName, mode: 'insensitive' }
+      };
+    }
+
     const users = await prisma.user.findMany({
+      where,
       orderBy: { createdAt: 'desc' },
       select: {
         id: true,

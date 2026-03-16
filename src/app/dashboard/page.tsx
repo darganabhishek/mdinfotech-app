@@ -2,18 +2,25 @@
 
 import { useEffect, useState } from 'react';
 import { FiUsers, FiUserPlus, FiDollarSign, FiBookOpen, FiTrendingUp, FiClock, FiAlertCircle, FiCheckCircle } from 'react-icons/fi';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
+import MobileDashboard from '@/components/dashboard/MobileDashboard';
 
 interface DashboardData {
   isFaculty?: boolean;
+  isStudent?: boolean;
+  studentName?: string;
   canViewFinances?: boolean;
   totalStudents?: number;
   activeAdmissions?: number;
   totalRevenue?: number;
+  totalPaid?: number;
   pendingFees?: number;
   totalCourses?: number;
   totalEnquiries?: number;
   recentPayments?: any[];
   recentAdmissions?: any[];
+  courses?: any[];
+  recentNotices?: any[];
   courseStats?: { name: string; count: number }[];
   revenueTrend?: { month: string; amount: number }[];
   myBatches?: number;
@@ -24,6 +31,7 @@ interface DashboardData {
 export default function DashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
+  const isMobile = useMediaQuery('(max-width: 768px)');
 
   useEffect(() => {
     fetch('/api/dashboard')
@@ -34,6 +42,105 @@ export default function DashboardPage() {
 
   if (loading) {
     return <div className="page-loading"><div className="loading-spinner" style={{ width: 40, height: 40 }} /><p>Loading dashboard...</p></div>;
+  }
+
+  if (isMobile) {
+    return <MobileDashboard data={data} />;
+  }
+
+  if (data?.isStudent) {
+    return (
+      <>
+        <div className="kpi-grid">
+          <div className="kpi-card blue">
+            <div className="kpi-header">
+              <div className="kpi-icon blue"><FiBookOpen /></div>
+            </div>
+            <div className="kpi-value">{data?.activeAdmissions || 0}</div>
+            <div className="kpi-label">My Active Courses</div>
+          </div>
+
+          <div className="kpi-card green">
+            <div className="kpi-header">
+              <div className="kpi-icon green"><FiCheckCircle /></div>
+            </div>
+            <div className="kpi-value">₹{(data?.totalPaid || 0).toLocaleString()}</div>
+            <div className="kpi-label">Total Paid</div>
+          </div>
+
+          <div className="kpi-card orange">
+            <div className="kpi-header">
+              <div className="kpi-icon orange"><FiAlertCircle /></div>
+            </div>
+            <div className="kpi-value">₹{(data?.pendingFees || 0).toLocaleString()}</div>
+            <div className="kpi-label">Pending Balance</div>
+          </div>
+        </div>
+
+        <div className="charts-grid" style={{ gridTemplateColumns: 'minmax(0, 2fr) minmax(0, 1fr)', gap: 24 }}>
+          <div className="data-card">
+            <div className="data-card-header">
+              <h3>📚 My Enrolled Courses</h3>
+            </div>
+            <div className="data-table-wrap">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Course</th>
+                    <th>Timing</th>
+                    <th>Paid</th>
+                    <th>Balance</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data?.courses?.map((course: any) => (
+                    <tr key={course.id}>
+                      <td style={{ fontWeight: 600 }}>{course.name} ({course.code})</td>
+                      <td style={{ color: 'var(--brand-blue)' }}>{course.timing || 'N/A'}</td>
+                      <td style={{ color: 'var(--success)' }}>₹{course.paid?.toLocaleString()}</td>
+                      <td style={{ color: course.balance > 0 ? 'var(--warning)' : 'var(--success)' }}>
+                        ₹{course.balance?.toLocaleString()}
+                      </td>
+                      <td><span className={`badge badge-${course.status === 'active' ? 'active' : 'info'}`}>{course.status}</span></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="data-card">
+            <div className="data-card-header">
+              <h3>🔔 Notice Board</h3>
+            </div>
+            <div className="notice-list" style={{ padding: '16px' }}>
+              {(data?.recentNotices?.length || 0) > 0 ? (
+                data?.recentNotices?.map((notice: any) => (
+                  <div key={notice.id} style={{
+                    padding: '16px',
+                    borderRadius: '12px',
+                    background: 'var(--bg-input)',
+                    marginBottom: '12px',
+                    borderLeft: '4px solid var(--brand-blue-light)'
+                  }}>
+                    <div style={{ fontWeight: 700, marginBottom: '4px' }}>{notice.title}</div>
+                    <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '8px' }}>
+                      {new Date(notice.createdAt).toLocaleDateString()}
+                    </div>
+                    <div style={{ fontSize: '0.9rem', lineHeight: '1.5' }}>{notice.content}</div>
+                  </div>
+                ))
+              ) : (
+                <div style={{ textAlign: 'center', padding: '20px', color: 'var(--text-muted)' }}>
+                  No new notices
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </>
+    );
   }
 
   if (data?.isFaculty) {

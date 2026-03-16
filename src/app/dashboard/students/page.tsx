@@ -1,6 +1,9 @@
 'use client';
 import { useEffect, useState, useCallback } from 'react';
-import { FiPlus, FiSearch, FiEdit2, FiTrash2, FiEye, FiDownload } from 'react-icons/fi';
+import { FiPlus, FiSearch, FiEdit2, FiTrash2, FiEye, FiDownload, FiX } from 'react-icons/fi';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
+import MobileStudentListing from '@/components/students/MobileStudentListing';
+import BottomSheet from '@/components/mobile/BottomSheet';
 import BulkActions from '@/components/dashboard/BulkActions';
 
 export default function StudentsPage() {
@@ -14,6 +17,7 @@ export default function StudentsPage() {
   const [showBulk, setShowBulk] = useState(false);
   const [editStudent, setEditStudent] = useState<any>(null);
   const [toast, setToast] = useState<{ type: string; msg: string } | null>(null);
+  const isMobile = useMediaQuery('(max-width: 768px)');
 
   const [form, setForm] = useState({
     name: '', fatherName: '', motherName: '', phone: '', email: '',
@@ -85,6 +89,67 @@ export default function StudentsPage() {
     setForm({ name: s.name, fatherName: s.fatherName, motherName: s.motherName, phone: s.phone, email: s.email, address: s.address, city: s.city, state: s.state, pincode: s.pincode, dob: s.dob, gender: s.gender, qualification: s.qualification, aadhaarNo: s.aadhaarNo || '' });
     setEditStudent(s); setShowModal(true);
   };
+
+  if (isMobile) {
+    return (
+      <div className="mobile-students">
+        <MobileStudentListing 
+          students={students}
+          onAdd={() => { resetForm(); setEditStudent(null); setShowModal(true); }}
+          onEdit={openEdit}
+          onDelete={id => handleDelete(id)}
+          search={search}
+          onSearchChange={setSearch}
+          statusFilter={statusFilter}
+          onStatusFilterChange={setStatusFilter}
+        />
+
+        <BottomSheet 
+          isOpen={showModal} 
+          onClose={() => setShowModal(false)}
+          title={editStudent ? 'Edit Student' : 'Add New Student'}
+        >
+          <form onSubmit={handleSubmit}>
+            <div className="form-group">
+              <label>Full Name *</label>
+              <input className="form-control" required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
+            </div>
+            <div className="form-row">
+              <div className="form-group">
+                <label>Phone</label>
+                <input className="form-control" maxLength={10} value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value.replace(/\D/g, '') })} />
+              </div>
+              <div className="form-group">
+                <label>Gender</label>
+                <select className="form-control" value={form.gender} onChange={e => setForm({ ...form, gender: e.target.value })}>
+                  <option value="">Select</option>
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                </select>
+              </div>
+            </div>
+            <div className="form-group">
+              <label>Address</label>
+              <textarea className="form-control" rows={2} value={form.address} onChange={e => setForm({ ...form, address: e.target.value })} />
+            </div>
+            <div className="form-row">
+              <div className="form-group">
+                <label>Aadhaar</label>
+                <input className="form-control" maxLength={12} value={form.aadhaarNo} onChange={e => setForm({ ...form, aadhaarNo: e.target.value.replace(/\D/g, '') })} />
+              </div>
+              <div className="form-group">
+                <label>Qualification</label>
+                <input className="form-control" value={form.qualification} onChange={e => setForm({ ...form, qualification: e.target.value })} />
+              </div>
+            </div>
+            <button type="submit" className="btn btn-primary btn-block" style={{ height: 48, marginTop: 12 }}>
+              {editStudent ? 'Update Profile' : 'Add Student'}
+            </button>
+          </form>
+        </BottomSheet>
+      </div>
+    );
+  }
 
   return (
     <>

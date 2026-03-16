@@ -1,6 +1,9 @@
 'use client';
 import { useEffect, useState, useCallback } from 'react';
-import { FiPlus, FiSearch, FiDollarSign, FiEdit2, FiTrash2, FiDownload, FiUpload, FiSmartphone } from 'react-icons/fi';
+import { FiPlus, FiSearch, FiDollarSign, FiEdit2, FiTrash2, FiDownload, FiUpload, FiSmartphone, FiX, FiSettings, FiFilter, FiSliders, FiChevronUp, FiChevronDown, FiCheckSquare, FiSquare } from 'react-icons/fi';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
+import MobileAdmissions from '@/components/admissions/MobileAdmissions';
+import BottomSheet from '@/components/mobile/BottomSheet';
 import QRCode from 'qrcode';
 
 export default function AdmissionsPage() {
@@ -21,6 +24,20 @@ export default function AdmissionsPage() {
   const [courses, setCourses] = useState<any[]>([]);
   const [timeSlots, setTimeSlots] = useState<any[]>([]);
   const [toast, setToast] = useState<{ type: string; msg: string } | null>(null);
+  const isMobile = useMediaQuery('(max-width: 768px)');
+  
+  // Selection State
+  const [selectedAdmissions, setSelectedAdmissions] = useState<number[]>([]);
+  
+  // Customizable Columns State
+  const [visibleColumns, setVisibleColumns] = useState<string[]>([
+    'student', 'course', 'batch', 'netFee', 'paid', 'balance', 'status', 'date'
+  ]);
+  const [showColumnSelector, setShowColumnSelector] = useState(false);
+  
+  // Sorting State
+  const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
+
   const [form, setForm] = useState({ studentId: 0, courseId: 0, timeSlotId: 0, discount: 0, admissionDate: new Date().toISOString().split('T')[0], status: 'active', notes: '', paymentPlan: 'monthly', installmentAmount: '', installmentsCount: '' });
   const [selectedCourseFee, setSelectedCourseFee] = useState(0);
 
@@ -162,6 +179,149 @@ export default function AdmissionsPage() {
 
   const getPaidAmount = (adm: any) => (adm.payments || []).reduce((s: number, p: any) => s + p.amount, 0);
 
+  const toggleColumn = (col: string) => {
+    setVisibleColumns(prev => 
+      prev.includes(col) ? prev.filter(c => c !== col) : [...prev, col]
+    );
+  };
+
+  const toggleSelectAdmission = (id: number) => {
+    setSelectedAdmissions(prev => 
+      prev.includes(id) ? prev.filter(aId => aId !== id) : [...prev, id]
+    );
+  };
+
+  const toggleSelectAll = () => {
+    const sorted = getSortedAdmissions();
+    if (selectedAdmissions.length === sorted.length) {
+      setSelectedAdmissions([]);
+    } else {
+      setSelectedAdmissions(sorted.map(a => a.id));
+    }
+  };
+
+  const requestSort = (key: string) => {
+    let direction: 'asc' | 'desc' = 'asc';
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const getSortedAdmissions = () => {
+    if (!sortConfig) return admissions;
+    return [...admissions].sort((a, b) => {
+      let valA: any, valB: any;
+      if (sortConfig.key === 'student') { valA = a.student.name; valB = b.student.name; }
+      else if (sortConfig.key === 'course') { valA = a.course.name; valB = b.course.name; }
+      else if (sortConfig.key === 'paid') { valA = getPaidAmount(a); valB = getPaidAmount(b); }
+      else if (sortConfig.key === 'balance') { valA = a.netFee - getPaidAmount(a); valB = b.netFee - getPaidAmount(b); }
+      else { valA = a[sortConfig.key]; valB = b[sortConfig.key]; }
+
+      if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
+      if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+  };
+
+  if (isMobile) {
+    return (
+      <div className="mobile-admissions">
+        <MobileAdmissions 
+          data={admissions}
+          onNew={openNewAdmission}
+          onEdit={openEditAdmission}
+          onDelete={handleDelete}
+          onShowQr={() => setShowQrModal(true)}
+          search={search}
+          onSearchChange={setSearch}
+          statusFilter={statusFilter}
+          onStatusFilterChange={setStatusFilter}
+        />
+
+        <BottomSheet 
+          isOpen={showModal} 
+          onClose={() => setShowModal(false)}
+          title={editAdmission ? 'Edit Admission' : 'New Admission'}
+        >
+          <form onSubmit={handleSubmit}>
+            <div className="form-group">
+              <label>Student *</label>
+              <select className="form-control" required value={form.studentId} onChange={e => setForm({ ...form, studentId: Number(e.target.value) })}>
+                <option value="">Select Student</option>
+                {students.map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}
+              </select>
+            </div>
+            <div className="form-row">
+              <div className="form-group">
+                <label>Course *</label>
+                <select className="form-control" required value={form.courseId} onChange={e => handleCourseChange(Number(e.target.value))}>
+                  <option value="">Course</option>
+                  {courses.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+              </div>
+              <div className="form-group">
+                <label>Time Slot *</label>
+                <select className="form-control" required value={form.timeSlotId} onChange={e => setForm({ ...form, timeSlotId: Number(e.target.value) })}>
+                  <option value="">Time Slot</option>
+                  {timeSlots.map((ts: any) => <option key={ts.id} value={ts.id}>{ts.label}</option>)}
+                </select>
+              </div>
+            </div>
+            
+            {selectedCourseFee > 0 && (
+              <div style={{ background: 'var(--bg-secondary)', padding: 12, borderRadius: 12, marginBottom: 16 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
+                  <span>Net Fee: <strong>₹{(selectedCourseFee - form.discount).toLocaleString()}</strong></span>
+                  <span style={{ color: 'var(--danger)' }}>Disc: ₹{form.discount}</span>
+                </div>
+              </div>
+            )}
+
+            <div className="form-group">
+              <label>Plan</label>
+              <select className="form-control" value={form.paymentPlan} onChange={e => setForm({ ...form, paymentPlan: e.target.value })}>
+                <option value="full">Full Payment</option>
+                <option value="monthly">Monthly</option>
+              </select>
+            </div>
+            {form.paymentPlan === 'monthly' && (
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Installment (₹)</label>
+                  <input className="form-control" type="number" value={form.installmentAmount} onChange={e => setForm({ ...form, installmentAmount: e.target.value })} />
+                </div>
+                <div className="form-group">
+                  <label>Months</label>
+                  <input className="form-control" type="number" value={form.installmentsCount} onChange={e => setForm({ ...form, installmentsCount: e.target.value })} />
+                </div>
+              </div>
+            )}
+            
+            <button type="submit" className="btn btn-primary btn-block" style={{ height: 48, marginTop: 12 }}>
+              {editAdmission ? 'Update' : 'Create'} Admission
+            </button>
+          </form>
+        </BottomSheet>
+
+        <BottomSheet 
+          isOpen={showQrModal} 
+          onClose={() => setShowQrModal(false)}
+          title="Registration QR"
+        >
+          <div style={{ textAlign: 'center', padding: 16 }}>
+            {qrCodeUrl ? (
+              <img src={qrCodeUrl} alt="QR" style={{ width: 220, marginBottom: 16, borderRadius: 12 }} />
+            ) : (
+              <div className="loading-spinner" style={{ margin: '20px auto' }} />
+            )}
+            <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Scan to open registration form</p>
+          </div>
+        </BottomSheet>
+      </div>
+    );
+  }
+
   return (
     <>
       {toast && <div className="toast-container"><div className={`toast toast-${toast.type}`}>{toast.msg}</div></div>}
@@ -183,6 +343,31 @@ export default function AdmissionsPage() {
               <option value="">All Status</option><option value="active">Active</option><option value="completed">Completed</option><option value="dropped">Dropped</option><option value="pending">Pending</option>
             </select>
           </div>
+          <div style={{ position: 'relative' }}>
+            <button className="btn btn-outline" onClick={() => setShowColumnSelector(!showColumnSelector)}>
+              <FiSliders /> Columns
+            </button>
+            {showColumnSelector && (
+              <div className="dropdown-menu" style={{ position: 'absolute', right: 0, top: '45px', zIndex: 100, background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '12px', boxShadow: 'var(--shadow-lg)', minWidth: '180px' }}>
+                <h4 style={{ margin: '0 0 8px 0', fontSize: '14px' }}>Visible Columns</h4>
+                {[
+                  { id: 'student', label: 'Student' },
+                  { id: 'course', label: 'Course' },
+                  { id: 'batch', label: 'Batch' },
+                  { id: 'netFee', label: 'Net Fee' },
+                  { id: 'paid', label: 'Paid' },
+                  { id: 'balance', label: 'Balance' },
+                  { id: 'status', label: 'Status' },
+                  { id: 'date', label: 'Date' }
+                ].map(col => (
+                  <label key={col.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '4px 0', cursor: 'pointer', fontSize: '13px' }}>
+                    <input type="checkbox" checked={visibleColumns.includes(col.id)} onChange={() => toggleColumn(col.id)} />
+                    {col.label}
+                  </label>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         {loading ? <div className="page-loading"><div className="loading-spinner" /></div> : admissions.length === 0 ? (
@@ -190,24 +375,72 @@ export default function AdmissionsPage() {
         ) : (
           <>
             <div className="data-table-wrap pc-only">
+              {selectedAdmissions.length > 0 && (
+                <div style={{ padding: '8px 16px', background: 'var(--brand-blue-alpha)', borderBottom: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '13px' }}>
+                  <span><strong>{selectedAdmissions.length}</strong> admissions selected</span>
+                  <button className="btn btn-sm btn-outline" onClick={() => setSelectedAdmissions([])}>Clear Selection</button>
+                </div>
+              )}
               <table className="data-table">
-                <thead><tr><th>Student</th><th>Course</th><th>Batch</th><th>Net Fee</th><th>Paid</th><th>Balance</th><th>Status</th><th>Actions</th></tr></thead>
+                <thead>
+                  <tr>
+                    <th style={{ width: '40px' }}>
+                      <div onClick={toggleSelectAll} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        {selectedAdmissions.length > 0 && selectedAdmissions.length === getSortedAdmissions().length ? (
+                          <FiCheckSquare style={{ color: 'var(--brand-blue-light)' }} />
+                        ) : (
+                          <FiSquare />
+                        )}
+                      </div>
+                    </th>
+                    {visibleColumns.includes('student') && <th style={{ cursor: 'pointer' }} onClick={() => requestSort('student')}>Student {sortConfig?.key === 'student' && (sortConfig.direction === 'asc' ? <FiChevronUp /> : <FiChevronDown />)}</th>}
+                    {visibleColumns.includes('course') && <th style={{ cursor: 'pointer' }} onClick={() => requestSort('course')}>Course {sortConfig?.key === 'course' && (sortConfig.direction === 'asc' ? <FiChevronUp /> : <FiChevronDown />)}</th>}
+                    {visibleColumns.includes('batch') && <th>Batch</th>}
+                    {visibleColumns.includes('netFee') && <th style={{ cursor: 'pointer' }} onClick={() => requestSort('netFee')}>Net Fee {sortConfig?.key === 'netFee' && (sortConfig.direction === 'asc' ? <FiChevronUp /> : <FiChevronDown />)}</th>}
+                    {visibleColumns.includes('paid') && <th style={{ cursor: 'pointer' }} onClick={() => requestSort('paid')}>Paid {sortConfig?.key === 'paid' && (sortConfig.direction === 'asc' ? <FiChevronUp /> : <FiChevronDown />)}</th>}
+                    {visibleColumns.includes('balance') && <th style={{ cursor: 'pointer' }} onClick={() => requestSort('balance')}>Balance {sortConfig?.key === 'balance' && (sortConfig.direction === 'asc' ? <FiChevronUp /> : <FiChevronDown />)}</th>}
+                    {visibleColumns.includes('status') && <th>Status</th>}
+                    {visibleColumns.includes('date') && <th style={{ cursor: 'pointer' }} onClick={() => requestSort('admissionDate')}>Date {sortConfig?.key === 'admissionDate' && (sortConfig.direction === 'asc' ? <FiChevronUp /> : <FiChevronDown />)}</th>}
+                    <th>Actions</th>
+                  </tr>
+                </thead>
                 <tbody>
-                  {admissions.map((a: any) => {
+                  {getSortedAdmissions().map((a: any) => {
                     const paid = getPaidAmount(a);
                     const balance = a.netFee - paid;
+                    const isSelected = selectedAdmissions.includes(a.id);
+                    const statusBadgeClass = `badge badge-${a.status === 'active' ? 'active' : a.status === 'completed' ? 'completed' : a.status === 'pending' ? 'warning' : 'danger'}`;
+                    
                     return (
-                      <tr key={a.id}>
-                        <td>
-                          <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{a.student?.name}</div>
-                          <div style={{ fontSize: '0.8rem', color: 'var(--text-accent)' }}>{a.student?.enrollmentNo}</div>
+                      <tr key={a.id} className={isSelected ? 'selected-row' : ''}>
+                        <td style={{ textAlign: 'center' }}>
+                          <div onClick={() => toggleSelectAdmission(a.id)} style={{ cursor: 'pointer', display: 'inline-flex' }}>
+                            {isSelected ? (
+                              <FiCheckSquare style={{ color: 'var(--brand-blue-light)' }} />
+                            ) : (
+                              <FiSquare style={{ color: 'var(--text-muted)' }} />
+                            )}
+                          </div>
                         </td>
-                        <td><span className="badge badge-info">{a.course?.code}</span></td>
-                        <td style={{ fontSize: '0.8rem' }}>{a.batch?.timing || a.batch?.name}</td>
-                        <td>₹{a.netFee?.toLocaleString()}</td>
-                        <td style={{ color: 'var(--success)', fontWeight: 700 }}>₹{paid.toLocaleString()}</td>
-                        <td style={{ color: balance > 0 ? 'var(--danger)' : 'var(--success)', fontWeight: 700 }}>₹{balance.toLocaleString()}</td>
-                        <td><span className={`badge badge-${a.status === 'active' ? 'active' : a.status === 'completed' ? 'completed' : a.status === 'pending' ? 'warning' : 'danger'}`}>{a.status}</span></td>
+                        {visibleColumns.includes('student') && (
+                          <td>
+                            <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{a.student?.name}</div>
+                            <div style={{ fontSize: '0.8rem', color: 'var(--text-accent)' }}>{a.student?.enrollmentNo}</div>
+                          </td>
+                        )}
+                        {visibleColumns.includes('course') && <td><span className="badge badge-info">{a.course?.code}</span></td>}
+                        {visibleColumns.includes('batch') && <td style={{ fontSize: '0.8rem' }}>{a.batch?.timing || a.batch?.name}</td>}
+                        {visibleColumns.includes('netFee') && <td>₹{a.netFee?.toLocaleString()}</td>}
+                        {visibleColumns.includes('paid') && <td style={{ color: 'var(--success)', fontWeight: 700 }}>₹{paid.toLocaleString()}</td>}
+                        {visibleColumns.includes('balance') && (
+                          <td style={{ color: balance > 0 ? 'var(--danger)' : 'var(--success)', fontWeight: 700 }}>
+                            ₹{balance.toLocaleString()}
+                          </td>
+                        )}
+                        {visibleColumns.includes('status') && (
+                          <td><span className={statusBadgeClass}>{a.status}</span></td>
+                        )}
+                        {visibleColumns.includes('date') && <td>{a.admissionDate}</td>}
                         <td>
                           <div style={{ display: 'flex', gap: 8 }}>
                             {a.status === 'pending' ? (

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { FiBook, FiCalendar, FiDollarSign, FiFileText, FiClock, FiCheckCircle, FiAlertCircle } from 'react-icons/fi';
+import { FiBook, FiCalendar, FiDollarSign, FiFileText, FiClock, FiCheckCircle, FiAlertCircle, FiLock } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 
 export default function StudentDashboardPage() {
@@ -175,45 +175,90 @@ export default function StudentDashboardPage() {
       )}
 
       {activeTab === 'assignments' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
           {stats.assignments?.length > 0 ? (
-            stats.assignments.reduce((acc: any, ass: any) => {
-              const topicName = ass.topic?.name || 'General Assignments';
+            Object.entries(stats.assignments.reduce((acc: any, ass: any) => {
+              const topicName = ass.topic?.name || 'General Coursework';
               if (!acc[topicName]) acc[topicName] = [];
               acc[topicName].push(ass);
               return acc;
-            }, {} as any) && Object.entries(stats.assignments.reduce((acc: any, ass: any) => {
-              const topicName = ass.topic?.name || 'General Assignments';
-              if (!acc[topicName]) acc[topicName] = [];
-              acc[topicName].push(ass);
-              return acc;
-            }, {})).map(([topic, items]: [any, any], i: number) => (
-              <div key={i} className="data-card">
-                <div className="data-card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <h3 style={{ margin: 0 }}>{topic}</h3>
-                  {items[0].isLocked && <span style={{ color: 'var(--danger)', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: 4 }}><FiClock /> Locked</span>}
-                </div>
-                <div style={{ padding: 20 }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            }, {})).map(([topic, items]: [any, any], i: number) => {
+              const allLocked = items.every((ass: any) => ass.isLocked);
+              return (
+                <div key={i} className="curriculum-topic" style={{ 
+                  background: 'var(--bg-card)', 
+                  borderRadius: 16, 
+                  overflow: 'hidden', 
+                  border: '1px solid var(--border-color)',
+                  opacity: allLocked ? 0.75 : 1
+                }}>
+                  <div style={{ 
+                    padding: '16px 20px', 
+                    background: 'var(--bg-secondary)', 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    alignItems: 'center',
+                    borderBottom: '1px solid var(--border-color)'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      <div style={{ 
+                        width: 32, 
+                        height: 32, 
+                        borderRadius: 8, 
+                        background: 'var(--brand-blue-light)', 
+                        color: 'white', 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'center',
+                        fontSize: '14px',
+                        fontWeight: 700
+                      }}>{i + 1}</div>
+                      <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700 }}>{topic}</h3>
+                    </div>
+                    {allLocked && <span style={{ color: 'var(--danger)', fontSize: '0.85rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}><FiLock /> Locked</span>}
+                  </div>
+                  
+                  <div style={{ padding: '8px 0' }}>
                     {items.map((ass: any, idx: number) => (
-                      <div key={idx} style={{ padding: 16, borderRadius: 12, border: '1px solid var(--border-color)', opacity: ass.isLocked ? 0.6 : 1, background: ass.isLocked ? 'var(--bg-secondary)' : 'transparent' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                          <div style={{ fontWeight: 600 }}>{ass.title}</div>
-                          <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Due: {ass.dueDate}</div>
+                      <div key={idx} style={{ 
+                        padding: '16px 20px', 
+                        borderBottom: idx === items.length - 1 ? 'none' : '1px solid var(--border-color)',
+                        display: 'flex',
+                        gap: 16,
+                        position: 'relative'
+                      }}>
+                        <div style={{ marginTop: 4, color: ass.isLocked ? 'var(--text-muted)' : 'var(--brand-blue-light)' }}>
+                          {ass.isLocked ? <FiLock size={18} /> : <FiFileText size={18} />}
                         </div>
-                        <p style={{ margin: '0 0 12px', fontSize: '0.85rem' }}>{ass.description}</p>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Faculty: {ass.faculty.name}</span>
-                          {!ass.isLocked && <button className="btn btn-outline btn-sm">Submit Assignment</button>}
+                        <div style={{ flex: 1 }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                            <div style={{ fontWeight: 600, color: ass.isLocked ? 'var(--text-muted)' : 'var(--text-primary)' }}>{ass.title}</div>
+                            {!ass.isLocked && <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Due: {ass.dueDate}</div>}
+                          </div>
+                          {!ass.isLocked ? (
+                            <>
+                              <p style={{ margin: '0 0 12px', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{ass.description}</p>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Posted by: {ass.faculty?.name}</span>
+                                <button className="btn btn-outline btn-sm">Submit Now</button>
+                              </div>
+                            </>
+                          ) : (
+                            <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>This assignment is currently locked. Complete previous topics to unlock.</p>
+                          )}
                         </div>
                       </div>
                     ))}
                   </div>
                 </div>
-              </div>
-            ))
+              );
+            })
           ) : (
-            <div className="data-card" style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>No assignments assigned yet.</div>
+            <div className="data-card" style={{ padding: 60, textAlign: 'center' }}>
+              <div style={{ fontSize: '48px', marginBottom: 16 }}>📚</div>
+              <h4 style={{ color: 'var(--text-muted)' }}>Curriculum is being prepared</h4>
+              <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Assignments will appear here once faculty assigns them.</p>
+            </div>
           )}
         </div>
       )}

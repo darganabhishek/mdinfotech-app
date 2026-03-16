@@ -3,6 +3,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { FiPlay, FiSquare, FiUsers, FiRefreshCw } from 'react-icons/fi';
 import toast from 'react-hot-toast';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
+import MobileAttendanceSession from '@/components/attendance/MobileAttendanceSession';
 
 export default function AttendanceSessionPage() {
   const [batches, setBatches] = useState<any[]>([]);
@@ -11,6 +13,7 @@ export default function AttendanceSessionPage() {
   const [qrData, setQrData] = useState<any>(null);
   const [selectedBatch, setSelectedBatch] = useState('');
   const [loading, setLoading] = useState(true);
+  const isMobile = useMediaQuery('(max-width: 768px)');
   const timerRef = useRef<any>(null);
 
   useEffect(() => {
@@ -26,8 +29,9 @@ export default function AttendanceSessionPage() {
     finally { setLoading(false); }
   };
 
-  const startSession = async () => {
-    if (!selectedBatch) { toast.error('Select a batch'); return; }
+  const startSession = async (batchId?: string) => {
+    const bId = batchId || selectedBatch;
+    if (!bId) { toast.error('Select a batch'); return; }
 
     // Get current GPS
     let lat = 0, lng = 0;
@@ -43,7 +47,7 @@ export default function AttendanceSessionPage() {
       const res = await fetch('/api/attendance/session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ batchId: selectedBatch, latitude: lat, longitude: lng }),
+        body: JSON.stringify({ batchId: bId, latitude: lat, longitude: lng }),
       });
       if (res.ok) {
         const session = await res.json();
@@ -89,6 +93,18 @@ export default function AttendanceSessionPage() {
   if (loading) return <div className="page-loading"><div className="loading-spinner" /></div>;
 
   const activeBatches = batches.filter(isBatchActiveNow);
+
+  if (isMobile) {
+    return (
+      <MobileAttendanceSession 
+        batches={activeBatches}
+        activeSession={activeSession}
+        qrData={qrData}
+        onStart={startSession}
+        onEnd={endSession}
+      />
+    );
+  }
   
   // Group batches by their time slot name/time
   const groupedBatches = batches.reduce((acc: any, batch: any) => {
@@ -140,7 +156,7 @@ export default function AttendanceSessionPage() {
               </p>
           </div>
 
-          <button className="btn btn-primary" onClick={startSession} style={{ width: '100%', marginTop: '20px', height: '50px', fontSize: '1.1rem' }}>
+          <button className="btn btn-primary" onClick={() => startSession()} style={{ width: '100%', marginTop: '20px', height: '50px', fontSize: '1.1rem' }}>
             <FiPlay /> Start Session & Generate QR
           </button>
         </div>
