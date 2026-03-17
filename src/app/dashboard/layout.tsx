@@ -219,6 +219,10 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
 
         <div className="page-content">
           {children}
+          
+          <footer className="desktop-content-footer">
+            Designed & Developed by Abhishek Dargan
+          </footer>
         </div>
       </div>
 
@@ -262,6 +266,17 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
           color: var(--brand-blue-light);
           transform: translateY(-2px);
           box-shadow: var(--shadow-md);
+        }
+
+        .desktop-content-footer {
+          margin-top: 40px;
+          padding: 24px 0;
+          text-align: center;
+          font-size: 12px;
+          color: var(--text-muted);
+          border-top: 1px solid var(--border-color);
+          font-weight: 500;
+          opacity: 0.7;
         }
       `}</style>
     </div>

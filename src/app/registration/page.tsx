@@ -300,9 +300,22 @@ export default function RegistrationPage() {
             </button>
           </div>
         </form>
+        
+        <footer className="registration-footer">
+          Designed & Developed by Abhishek Dargan
+        </footer>
       </div>
 
       <style jsx>{`
+        .registration-footer {
+          padding: 24px;
+          text-align: center;
+          font-size: 13px;
+          color: #666;
+          border-top: 1px solid #f0f0f0;
+          font-weight: 500;
+          opacity: 0.8;
+        }
         .registration-page { background: #f8faff; min-height: 100vh; padding: 40px 20px; font-family: 'Inter', sans-serif; }
         .registration-container { max-width: 800px; margin: 0 auto; background: white; border-radius: 24px; box-shadow: 0 20px 60px rgba(0,0,0,0.05); overflow: hidden; }
         .registration-header { background: #1a237e; color: white; padding: 40px; text-align: center; }
