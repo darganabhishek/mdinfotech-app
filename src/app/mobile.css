@@ -49,22 +49,70 @@
   -webkit-overflow-scrolling: touch;
 }
 
-/* Bottom Navigation */
+/* Bottom Navigation Redesign */
 .mobile-nav {
   position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
-  height: calc(var(--mobile-nav-height) + var(--safe-area-bottom));
+  height: auto;
+  min-height: calc(85px + var(--safe-area-bottom));
   padding-bottom: var(--safe-area-bottom);
-  background: rgba(var(--bg-secondary-rgb, 255, 255, 255), 0.85);
+  background: rgba(var(--bg-secondary-rgb, 255, 255, 255), 0.9);
   border-top: 1px solid var(--border-color);
+  z-index: 1000;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   display: flex;
-  justify-content: space-around;
-  align-items: center;
-  z-index: 1000; /* Increased z-index */
-  backdrop-filter: blur(15px);
-  -webkit-backdrop-filter: blur(15px);
+  flex-direction: column;
+}
+
+.mobile-nav-container {
+  overflow-x: auto;
+  display: flex;
+  padding: 10px 4px;
+  gap: 12px;
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
+}
+
+.mobile-nav-container::-webkit-scrollbar {
+  display: none;
+}
+
+.mobile-nav-category {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 12px;
+  border-right: 1px solid var(--border-color);
+  min-width: max-content;
+}
+
+.mobile-nav-category:last-child {
+  border-right: none;
+}
+
+.category-title {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 4px;
+  opacity: 0.8;
+}
+
+/* Category Colors */
+.cat-management .category-title { color: #3b82f6; }
+.cat-secure .category-title { color: #ef4444; }
+.cat-finance .category-title { color: #8b5cf6; }
+.cat-academics .category-title { color: #10b981; }
+.cat-other .category-title { color: #f59e0b; }
+.cat-main .category-title { color: var(--brand-blue-light); }
+
+.mobile-nav-items {
+  display: flex;
+  gap: 8px;
 }
 
 .mobile-nav-item {
@@ -73,53 +121,56 @@
   align-items: center;
   justify-content: center;
   gap: 4px;
+  padding: 8px 12px;
+  border-radius: 12px;
   color: var(--text-muted);
-  font-size: 10px;
-  font-weight: 500;
-  transition: all var(--transition-fast);
-  flex: 1;
-  height: 100%;
+  font-size: 11px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  min-width: 65px;
+  background: transparent;
 }
 
 .mobile-nav-item.active {
-  color: var(--brand-blue-light);
+  background: var(--bg-secondary);
+  box-shadow: var(--shadow-sm);
 }
+
+.cat-management .mobile-nav-item.active { color: #3b82f6; background: rgba(59, 130, 246, 0.1); }
+.cat-secure .mobile-nav-item.active { color: #ef4444; background: rgba(239, 68, 68, 0.1); }
+.cat-finance .mobile-nav-item.active { color: #8b5cf6; background: rgba(139, 92, 246, 0.1); }
+.cat-academics .mobile-nav-item.active { color: #10b981; background: rgba(16, 185, 129, 0.1); }
+.cat-other .mobile-nav-item.active { color: #f59e0b; background: rgba(245, 158, 11, 0.1); }
+.cat-main .mobile-nav-item.active { color: var(--brand-blue-light); background: rgba(var(--brand-blue-rgb), 0.1); }
 
 .mobile-nav-icon {
-  font-size: 22px;
+  font-size: 20px;
 }
 
-/* Floating Action Button */
+/* Floating Action Button Adjustment */
 .mobile-fab {
   position: fixed;
   right: 16px;
-  bottom: calc(var(--mobile-nav-height) + 16px + var(--safe-area-bottom));
-  width: 56px;
-  height: 56px;
-  border-radius: 28px;
+  bottom: calc(100px + var(--safe-area-bottom));
+  width: 50px;
+  height: 50px;
+  border-radius: 25px;
   background: var(--gradient-brand);
   color: white;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: var(--shadow-lg);
+  box-shadow: 0 8px 16px rgba(0,0,0,0.2);
   z-index: 90;
-  font-size: 24px;
+  font-size: 20px;
   border: none;
-  cursor: pointer;
-  transition: transform 0.2s active;
 }
 
-.mobile-fab:active {
-  transform: scale(0.9);
-}
-
-/* Mobile Cards */
 .mobile-card {
   background: var(--bg-card);
-  border-radius: 16px;
-  padding: 16px;
-  margin-bottom: 12px;
+  border-radius: 20px;
+  padding: 20px;
+  margin-bottom: 16px;
   border: 1px solid var(--border-color);
   box-shadow: var(--shadow-sm);
 }
