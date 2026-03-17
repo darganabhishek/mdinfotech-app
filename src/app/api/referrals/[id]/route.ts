@@ -5,13 +5,14 @@ import { authOptions } from '@/lib/auth';
 
 export async function PATCH(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id: idStr } = await params;
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {
-    const id = parseInt(params.id);
+    const id = parseInt(idStr);
     const body = await req.json();
     
     const referral = await prisma.referral.update({
@@ -33,13 +34,14 @@ export async function PATCH(
 
 export async function DELETE(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id: idStr } = await params;
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {
-    const id = parseInt(params.id);
+    const id = parseInt(idStr);
     await prisma.referral.delete({
       where: { id },
     });
