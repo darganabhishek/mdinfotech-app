@@ -34,9 +34,46 @@ export default function ReferralsPage() {
     } catch { toast.error('Network error'); }
   };
 
+  const handleStatusUpdate = async (id: number, data: any) => {
+    try {
+      const res = await fetch(`/api/referrals/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      if (res.ok) {
+        toast.success('Referral updated!');
+        fetchData();
+      } else {
+        toast.error('Failed to update');
+      }
+    } catch {
+      toast.error('Network error');
+    }
+  };
+
+  const handleDelete = async (id: number) => {
+    if (!confirm('Are you sure you want to delete this referral record?')) return;
+    try {
+      const res = await fetch(`/api/referrals/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        toast.success('Referral deleted');
+        fetchData();
+      } else {
+        toast.error('Failed to delete');
+      }
+    } catch {
+      toast.error('Network error');
+    }
+  };
+
   const statusBadge = (s: string) => {
-    const map: Record<string, string> = { pending: 'badge-warning', enrolled: 'badge-active', rewarded: 'badge-active' };
-    return <span className={`badge ${map[s] || 'badge-inactive'}`}>{s}</span>;
+    const map: Record<string, string> = { 
+      pending: 'badge-warning', 
+      enrolled: 'badge-active', 
+      rewarded: 'badge-success' 
+    };
+    return <span className={`badge ${map[s] || 'badge-inactive'}`}>{s.toUpperCase()}</span>;
   };
 
   const totalRewards = referrals.reduce((s, r) => s + r.rewardAmount, 0);
@@ -59,18 +96,18 @@ export default function ReferralsPage() {
         </div>
         <div className="kpi-card green">
           <div className="kpi-header"><div className="kpi-icon green"><FiCheck /></div></div>
-          <div className="kpi-value">{referrals.filter(r => r.status === 'enrolled').length}</div>
-          <div className="kpi-label">Enrolled</div>
+          <div className="kpi-value">{referrals.filter(r => r.status === 'enrolled' || r.status === 'rewarded').length}</div>
+          <div className="kpi-label">Conversions</div>
         </div>
         <div className="kpi-card orange">
           <div className="kpi-header"><div className="kpi-icon orange"><FiClock /></div></div>
-          <div className="kpi-value">{referrals.filter(r => r.status === 'pending').length}</div>
-          <div className="kpi-label">Pending</div>
+          <div className="kpi-value">₹{(totalRewards - paidRewards).toLocaleString()}</div>
+          <div className="kpi-label">Pending Rewards</div>
         </div>
         <div className="kpi-card purple">
           <div className="kpi-header"><div className="kpi-icon purple"><FiDollarSign /></div></div>
-          <div className="kpi-value">₹{totalRewards.toLocaleString()}</div>
-          <div className="kpi-label">Total Rewards</div>
+          <div className="kpi-value">₹{paidRewards.toLocaleString()}</div>
+          <div className="kpi-label">Total Paid</div>
         </div>
       </div>
 
@@ -84,7 +121,7 @@ export default function ReferralsPage() {
         <div className="data-card">
           <div className="data-table-wrap">
             <table className="data-table">
-              <thead><tr><th>Referrer</th><th>Referred Person</th><th>Course</th><th>Status</th><th>Reward</th></tr></thead>
+              <thead><tr><th>Referrer</th><th>Referred Person</th><th>Course</th><th>Status</th><th>Reward</th><th>Actions</th></tr></thead>
               <tbody>
                 {referrals.map((r: any) => (
                   <tr key={r.id}>
@@ -93,12 +130,46 @@ export default function ReferralsPage() {
                       <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{r.referrerStudent?.enrollmentNo}</div>
                     </td>
                     <td>
-                      <div>{r.referredName}</div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{r.referredPhone}</div>
+                      <div style={{ fontWeight: 600 }}>{r.referredName}</div>
+                      <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{r.referredPhone}</div>
                     </td>
                     <td>{r.courseInterested || '—'}</td>
                     <td>{statusBadge(r.status)}</td>
-                    <td style={{ fontWeight: 600 }}>₹{r.rewardAmount?.toLocaleString()}{r.rewardPaid && <FiCheck style={{ color: 'var(--brand-green)', marginLeft: 4 }} />}</td>
+                    <td>
+                      <div style={{ fontWeight: 700, color: r.rewardPaid ? 'var(--success)' : 'inherit' }}>
+                        ₹{r.rewardAmount?.toLocaleString()}
+                        {r.rewardPaid && <FiCheck style={{ marginLeft: 4 }} title="Paid" />}
+                      </div>
+                    </td>
+                    <td>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        {r.status === 'pending' && (
+                          <button 
+                            className="btn btn-outline btn-xs" 
+                            style={{ padding: '4px 8px' }}
+                            onClick={() => handleStatusUpdate(r.id, { status: 'enrolled' })}
+                          >
+                            Mark Enrolled
+                          </button>
+                        )}
+                        {(r.status === 'enrolled' || (r.status === 'pending' && !r.rewardPaid)) && !r.rewardPaid && (
+                          <button 
+                            className="btn btn-success btn-xs" 
+                            style={{ padding: '4px 8px', color: '#fff' }}
+                            onClick={() => handleStatusUpdate(r.id, { status: 'rewarded', rewardPaid: true })}
+                          >
+                            Mark Paid
+                          </button>
+                        )}
+                        <button 
+                          className="btn btn-danger btn-xs" 
+                          style={{ padding: '4px 8px', background: 'none', color: 'var(--danger)', border: '1px solid var(--danger)' }}
+                          onClick={() => handleDelete(r.id)}
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>
