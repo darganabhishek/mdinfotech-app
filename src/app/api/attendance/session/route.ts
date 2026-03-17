@@ -48,13 +48,13 @@ export async function POST(req: Request) {
       }
 
       // Close existing sessions for this time slot (for current creator)
-      await prisma.attendanceSession.updateMany({
+      await (prisma.attendanceSession as any).updateMany({
         where: { timeSlotId, creatorId: userId, active: true },
         data: { active: false, endTime: new Date() },
       });
     }
 
-    const attendanceSession = await prisma.attendanceSession.create({
+    const attendanceSession = await (prisma.attendanceSession as any).create({
       data: {
         timeSlotId,
         batchId,
@@ -91,7 +91,7 @@ export async function GET(req: Request) {
     if (batchId) where.batchId = parseInt(batchId);
     if (active === 'true') where.active = true;
 
-    const sessions = await prisma.attendanceSession.findMany({
+    const sessions = await (prisma.attendanceSession as any).findMany({
       where,
       include: {
         batch: { include: { course: true } },

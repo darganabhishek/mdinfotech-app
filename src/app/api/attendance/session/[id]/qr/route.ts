@@ -16,12 +16,13 @@ export async function GET(
     const { id: idStr } = await params;
     const sessionId = parseInt(idStr);
 
-    const session = await prisma.attendanceSession.findUnique({
+    const session = await (prisma.attendanceSession as any).findUnique({
       where: { id: sessionId },
       include: { 
         batch: { include: { course: true } }, 
         timeSlot: true,
-        _count: { select: { attendances: true } } 
+        _count: { select: { attendances: true } },
+        faculty: true
       },
     });
 
@@ -50,7 +51,7 @@ export async function GET(
       qr: qrDataUrl,
       secondsLeft,
       token,
-      attendanceCount: session._count.attendances,
+      attendanceCount: session._count?.attendances || 0,
       timeSlotName: session.timeSlot?.label || (session.faculty?.name ? `${session.faculty.name} - Session` : 'Admin Session'),
     });
   } catch (error) {
