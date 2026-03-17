@@ -9,16 +9,33 @@ export async function GET(request: Request) {
     const status = searchParams.get('status') || '';
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '20');
+    const timeSlotId = searchParams.get('timeSlotId');
 
     const where: any = {};
     if (status) where.status = status;
+    
+    if (timeSlotId && timeSlotId !== 'undefined' && timeSlotId !== '') {
+      const tsId = parseInt(timeSlotId);
+      if (!isNaN(tsId)) {
+        // More robust way: Get all batch IDs for this time slot
+        const batches = await prisma.batch.findMany({
+          where: { timeSlotId: tsId },
+          select: { id: true }
+        });
+        const batchIds = batches.map(b => b.id);
+        where.batchId = { in: batchIds };
+      }
+    }
+
     if (search) {
       where.OR = [
-        { student: { name: { contains: search } } },
-        { student: { enrollmentNo: { contains: search } } },
-        { course: { name: { contains: search } } },
+        { student: { name: { contains: search, mode: 'insensitive' } } },
+        { student: { enrollmentNo: { contains: search, mode: 'insensitive' } } },
+        { course: { name: { contains: search, mode: 'insensitive' } } },
       ];
     }
+
+    console.log('Admissions GET query (DEBUG):', JSON.stringify({ status, timeSlotId, where }, null, 2));
 
     const [admissions, total] = await Promise.all([
       prisma.admission.findMany({

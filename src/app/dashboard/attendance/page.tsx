@@ -13,6 +13,8 @@ export default function AttendancePage() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
+  const [searchTerm, setSearchTerm] = useState('');
+
   useEffect(() => {
     fetchTimeSlots();
     fetchAdmissions(''); // Initial load: Show All
@@ -34,7 +36,7 @@ export default function AttendancePage() {
       // Fetch admissions (active students)
       const url = timeSlotId 
         ? `/api/admissions?limit=100&status=active&timeSlotId=${timeSlotId}`
-        : `/api/admissions?limit=200&status=active`; // Limited for performance, but "All"
+        : `/api/admissions?limit=500&status=active`; // Increased limit for "All"
         
       const res = await fetch(url);
       const data = await res.json();
@@ -75,6 +77,23 @@ export default function AttendancePage() {
     }));
   };
 
+  const markAllPresent = () => {
+    const newAttendance = { ...attendance };
+    filteredAdmissions.forEach(adm => {
+      newAttendance[adm.student.id] = {
+        ...newAttendance[adm.student.id],
+        status: 'present'
+      };
+    });
+    setAttendance(newAttendance);
+    toast.success(`Marked ${filteredAdmissions.length} students as present`);
+  };
+
+  const filteredAdmissions = admissions.filter(adm => 
+    adm.student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    adm.student.enrollmentNo.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   const handleSave = async () => {
     if (!date) return;
     setSaving(true);
@@ -112,8 +131,8 @@ export default function AttendancePage() {
   const isSlotActiveNow = (slot: any) => {
     const now = new Date();
     const currentMins = now.getHours() * 60 + now.getMinutes();
-    const [sH, sM] = slot.startTime.split(':').map(Number);
-    const [eH, eM] = slot.endTime.split(':').map(Number);
+    const [sH, sM] = (slot.startTime || '00:00').split(':').map(Number);
+    const [eH, eM] = (slot.endTime || '00:00').split(':').map(Number);
     return currentMins >= (sH * 60 + sM - 15) && currentMins <= (eH * 60 + eM + 15);
   };
 
@@ -123,15 +142,33 @@ export default function AttendancePage() {
   return (
     <div className="attendance-page">
       <div className="page-header">
-        <div>
-          <h2>Attendance Hub</h2>
-          <p>Mark and track student attendance by batch time-slots.</p>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+          <div>
+            <h2>Attendance Hub</h2>
+            <p>Mark and track student attendance by batch time-slots.</p>
+          </div>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button 
+              className="btn btn-outline" 
+              onClick={markAllPresent}
+              disabled={filteredAdmissions.length === 0}
+            >
+              <FiCheck /> Mark All Present
+            </button>
+            <button 
+              className="btn btn-primary" 
+              onClick={handleSave} 
+              disabled={saving || admissions.length === 0}
+            >
+              <FiSave /> {saving ? 'Saving...' : 'Save Attendance'}
+            </button>
+          </div>
         </div>
       </div>
 
       <div className="data-card" style={{ marginBottom: '24px' }}>
         <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', padding: '16px' }}>
-          <div className="form-group" style={{ flex: 1, minWidth: '300px', marginBottom: 0 }}>
+          <div className="form-group" style={{ flex: 1, minWidth: '250px', marginBottom: 0 }}>
             <label>Filter by Time Slot</label>
             <select 
               className="form-control" 
@@ -158,7 +195,23 @@ export default function AttendancePage() {
               </optgroup>
             </select>
           </div>
-          <div className="form-group" style={{ width: '200px', marginBottom: 0 }}>
+
+          <div className="form-group" style={{ flex: 1, minWidth: '250px', marginBottom: 0 }}>
+            <label>Search Student</label>
+            <div style={{ position: 'relative' }}>
+              <FiSearch style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+              <input 
+                type="text" 
+                className="form-control" 
+                placeholder="Search by name or enrollment..." 
+                style={{ paddingLeft: '36px' }}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="form-group" style={{ width: '180px', marginBottom: 0 }}>
             <label>Date</label>
             <input 
               type="date" 
@@ -170,22 +223,13 @@ export default function AttendancePage() {
               }} 
             />
           </div>
-          <div style={{ display: 'flex', alignItems: 'flex-end' }}>
-             <button 
-                className="btn btn-primary" 
-                onClick={handleSave} 
-                disabled={saving || admissions.length === 0}
-             >
-               <FiSave /> {saving ? 'Saving...' : 'Save Attendance'}
-             </button>
-          </div>
         </div>
       </div>
 
       <div className="data-card">
         {loading ? (
             <div style={{ padding: '40px', textAlign: 'center' }}>Loading students...</div>
-        ) : admissions.length === 0 ? (
+        ) : filteredAdmissions.length === 0 ? (
             <div style={{ padding: '40px', textAlign: 'center' }}>No students found.</div>
         ) : (
           <div className="data-table-wrap">
@@ -200,7 +244,7 @@ export default function AttendancePage() {
                 </tr>
               </thead>
               <tbody>
-                {admissions.map(adm => {
+                {filteredAdmissions.map(adm => {
                   const student = adm.student;
                   return (
                     <tr key={`${adm.id}-${student.id}`}>
