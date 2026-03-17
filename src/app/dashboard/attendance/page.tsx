@@ -5,53 +5,59 @@ import { FiCalendar, FiCheck, FiX, FiClock, FiSave, FiSearch } from 'react-icons
 import toast from 'react-hot-toast';
 
 export default function AttendancePage() {
-  const [batches, setBatches] = useState<any[]>([]);
-  const [selectedBatchId, setSelectedBatchId] = useState<string>('');
+  const [timeSlots, setTimeSlots] = useState<any[]>([]);
+  const [selectedTimeSlotId, setSelectedTimeSlotId] = useState<string>('');
   const [date, setDate] = useState<string>(new Date().toISOString().split('T')[0]);
-  const [students, setStudents] = useState<any[]>([]);
-  const [attendance, setAttendance] = useState<Record<number, { status: string; notes: string }>>({});
+  const [admissions, setAdmissions] = useState<any[]>([]);
+  const [attendance, setAttendance] = useState<Record<number, { status: string; notes: string; batchId: number }>>({});
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    fetchBatches();
+    fetchTimeSlots();
+    fetchAdmissions(''); // Initial load: Show All
   }, []);
 
-  const fetchBatches = async () => {
+  const fetchTimeSlots = async () => {
     try {
-      const res = await fetch('/api/batches');
+      const res = await fetch('/api/timeslots');
       const data = await res.json();
-      setBatches(data);
+      setTimeSlots(data);
     } catch (error) {
-      toast.error('Failed to load batches');
+      toast.error('Failed to load time slots');
     }
   };
 
-  const handleBatchChange = async (batchId: string) => {
-    setSelectedBatchId(batchId);
-    if (!batchId) {
-      setStudents([]);
-      return;
-    }
-
+  const fetchAdmissions = async (timeSlotId: string) => {
     setLoading(true);
     try {
-      // Get batch students
-      const batchRes = await fetch(`/api/batches/${batchId}`);
-      const batchData = await batchRes.json();
-      const studentList = batchData.admissions?.map((a: any) => a.student) || [];
-      setStudents(studentList);
+      // Fetch admissions (active students)
+      const url = timeSlotId 
+        ? `/api/admissions?limit=100&status=active&timeSlotId=${timeSlotId}`
+        : `/api/admissions?limit=200&status=active`; // Limited for performance, but "All"
+        
+      const res = await fetch(url);
+      const data = await res.json();
+      const admissionList = data.admissions || [];
+      setAdmissions(admissionList);
 
-      // Fetch existing attendance for this date/batch
-      const attRes = await fetch(`/api/attendance?batchId=${batchId}&date=${date}`);
+      // Fetch existing attendance for this date
+      const attUrl = timeSlotId 
+        ? `/api/attendance?date=${date}&timeSlotId=${timeSlotId}`
+        : `/api/attendance?date=${date}`;
+        
+      const attRes = await fetch(attUrl);
       const attData = await attRes.json();
       
-      const attMap: Record<number, { status: string; notes: string }> = {};
-      studentList.forEach((s: any) => {
-        const existing = attData.find((a: any) => a.studentId === s.id);
-        attMap[s.id] = existing 
-          ? { status: existing.status, notes: existing.notes || '' }
-          : { status: 'present', notes: '' }; // Default to present
+      const attMap: Record<number, { status: string; notes: string; batchId: number }> = {};
+      admissionList.forEach((adm: any) => {
+        const student = adm.student;
+        const existing = attData.find((a: any) => a.studentId === student.id && a.batchId === adm.batchId);
+        attMap[student.id] = {
+          status: existing ? existing.status : 'present',
+          notes: existing ? (existing.notes || '') : '',
+          batchId: adm.batchId
+        };
       });
       setAttendance(attMap);
 
@@ -70,21 +76,21 @@ export default function AttendancePage() {
   };
 
   const handleSave = async () => {
-    if (!selectedBatchId || !date) return;
+    if (!date) return;
     setSaving(true);
 
     try {
-      const attendanceData = students.map(s => ({
-        studentId: s.id,
-        status: attendance[s.id]?.status || 'present',
-        notes: attendance[s.id]?.notes || ''
+      const attendanceData = admissions.map(adm => ({
+        studentId: adm.student.id,
+        batchId: adm.batchId,
+        status: attendance[adm.student.id]?.status || 'present',
+        notes: attendance[adm.student.id]?.notes || ''
       }));
 
       const res = await fetch('/api/attendance', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          batchId: parseInt(selectedBatchId),
           date,
           attendanceData
         })
@@ -102,27 +108,17 @@ export default function AttendancePage() {
     }
   };
 
-  // Helper to check if batch is currently active based on its time slot
-  const isBatchActiveNow = (batch: any) => {
-    if (!batch.timeSlot) return false;
+  // Helper to check if slot is currently active
+  const isSlotActiveNow = (slot: any) => {
     const now = new Date();
     const currentMins = now.getHours() * 60 + now.getMinutes();
-    const [sH, sM] = batch.timeSlot.startTime.split(':').map(Number);
-    const [eH, eM] = batch.timeSlot.endTime.split(':').map(Number);
+    const [sH, sM] = slot.startTime.split(':').map(Number);
+    const [eH, eM] = slot.endTime.split(':').map(Number);
     return currentMins >= (sH * 60 + sM - 15) && currentMins <= (eH * 60 + eM + 15);
   };
 
-  const activeBatches = batches.filter(isBatchActiveNow);
+  const activeSlots = timeSlots.filter(isSlotActiveNow);
   
-  // Group batches by their time slot name/time
-  const groupedOtherBatches = batches.reduce((acc: any, batch: any) => {
-    // Skip if already in activeBatches to avoid duplicates if we want strictly "other"
-    // but the user wants "time slot wise", so grouping all by time slot makes sense.
-    const slotLabel = batch.timeSlot ? `${batch.timeSlot.name} (${batch.timeSlot.startTime} - ${batch.timeSlot.endTime})` : 'Unscheduled Batches';
-    if (!acc[slotLabel]) acc[slotLabel] = [];
-    acc[slotLabel].push(batch);
-    return acc;
-  }, {});
 
   return (
     <div className="attendance-page">
@@ -136,29 +132,30 @@ export default function AttendancePage() {
       <div className="data-card" style={{ marginBottom: '24px' }}>
         <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', padding: '16px' }}>
           <div className="form-group" style={{ flex: 1, minWidth: '300px', marginBottom: 0 }}>
-            <label>Select Batch (Grouped by Time Slot)</label>
+            <label>Filter by Time Slot</label>
             <select 
               className="form-control" 
-              value={selectedBatchId} 
-              onChange={(e) => handleBatchChange(e.target.value)}
+              value={selectedTimeSlotId} 
+              onChange={(e) => {
+                setSelectedTimeSlotId(e.target.value);
+                fetchAdmissions(e.target.value);
+              }}
             >
-              <option value="">Choose Batch...</option>
-              {activeBatches.length > 0 && (
+              <option value="">All Students (Active Admissions)</option>
+              {activeSlots.length > 0 && (
                 <optgroup label="🔥 Ongoing Right Now">
-                  {activeBatches.map(b => (
-                    <option key={`active-${b.id}`} value={b.id}>🟢 {b.name} (Scheduled: {b.timeSlot?.startTime})</option>
+                  {activeSlots.map(ts => (
+                    <option key={`active-${ts.id}`} value={ts.id}>🟢 {ts.label} ({ts.startTime} - {ts.endTime})</option>
                   ))}
                 </optgroup>
               )}
-              {Object.keys(groupedOtherBatches).sort().map(slot => (
-                <optgroup key={slot} label={slot}>
-                  {groupedOtherBatches[slot].map((b: any) => (
-                    <option key={b.id} value={b.id}>
-                      {isBatchActiveNow(b) ? '🟢' : '⚪'} {b.name}
-                    </option>
-                  ))}
-                </optgroup>
-              ))}
+              <optgroup label="All Time Slots">
+                {timeSlots.map(ts => (
+                  <option key={ts.id} value={ts.id}>
+                    {isSlotActiveNow(ts) ? '🟢' : '⚪'} {ts.label} ({ts.startTime} - {ts.endTime})
+                  </option>
+                ))}
+              </optgroup>
             </select>
           </div>
           <div className="form-group" style={{ width: '200px', marginBottom: 0 }}>
@@ -169,7 +166,7 @@ export default function AttendancePage() {
               value={date} 
               onChange={(e) => {
                 setDate(e.target.value);
-                if (selectedBatchId) handleBatchChange(selectedBatchId);
+                fetchAdmissions(selectedTimeSlotId);
               }} 
             />
           </div>
@@ -177,7 +174,7 @@ export default function AttendancePage() {
              <button 
                 className="btn btn-primary" 
                 onClick={handleSave} 
-                disabled={saving || !selectedBatchId || students.length === 0}
+                disabled={saving || admissions.length === 0}
              >
                <FiSave /> {saving ? 'Saving...' : 'Save Attendance'}
              </button>
@@ -185,28 +182,34 @@ export default function AttendancePage() {
         </div>
       </div>
 
-      {selectedBatchId && (
-        <div className="data-card">
-          {loading ? (
-             <div style={{ padding: '40px', textAlign: 'center' }}>Loading students...</div>
-          ) : students.length === 0 ? (
-             <div style={{ padding: '40px', textAlign: 'center' }}>No students found in this batch.</div>
-          ) : (
-            <div className="data-table-wrap">
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>Enrollment</th>
-                    <th>Student Name</th>
-                    <th>Attendance Status</th>
-                    <th>Notes</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {students.map(student => (
-                    <tr key={student.id}>
+      <div className="data-card">
+        {loading ? (
+            <div style={{ padding: '40px', textAlign: 'center' }}>Loading students...</div>
+        ) : admissions.length === 0 ? (
+            <div style={{ padding: '40px', textAlign: 'center' }}>No students found.</div>
+        ) : (
+          <div className="data-table-wrap">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Enrollment</th>
+                  <th>Student Name</th>
+                  <th>Course & Batch</th>
+                  <th>Attendance Status</th>
+                  <th>Notes</th>
+                </tr>
+              </thead>
+              <tbody>
+                {admissions.map(adm => {
+                  const student = adm.student;
+                  return (
+                    <tr key={`${adm.id}-${student.id}`}>
                       <td style={{ fontSize: '0.85rem', color: 'var(--text-accent)' }}>{student.enrollmentNo}</td>
                       <td style={{ fontWeight: 600 }}>{student.name}</td>
+                      <td>
+                        <div style={{ fontSize: '0.8rem', fontWeight: 500 }}>{adm.course?.name}</div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{adm.batch?.name}</div>
+                      </td>
                       <td>
                         <div style={{ display: 'flex', gap: '4px' }}>
                           <button 
@@ -214,7 +217,7 @@ export default function AttendancePage() {
                             onClick={() => updateStatus(student.id, 'present')}
                             title="Present"
                           >
-                            <FiCheck /> Present
+                            <FiCheck /> P
                           </button>
                           <button 
                             className={`btn btn-sm ${attendance[student.id]?.status === 'absent' ? 'btn-danger' : 'btn-outline'}`}
@@ -222,7 +225,7 @@ export default function AttendancePage() {
                             style={attendance[student.id]?.status === 'absent' ? { background: 'var(--danger)', borderColor: 'var(--danger)' } : {}}
                             title="Absent"
                           >
-                            <FiX /> Absent
+                            <FiX /> A
                           </button>
                           <button 
                             className={`btn btn-sm ${attendance[student.id]?.status === 'late' ? 'btn-warning' : 'btn-outline'}`}
@@ -230,7 +233,7 @@ export default function AttendancePage() {
                             style={attendance[student.id]?.status === 'late' ? { background: 'var(--warning)', borderColor: 'var(--warning)', color: '#000' } : {}}
                             title="Late"
                           >
-                            <FiClock /> Late
+                            <FiClock /> L
                           </button>
                         </div>
                       </td>
@@ -238,7 +241,7 @@ export default function AttendancePage() {
                         <input 
                           type="text" 
                           className="form-control form-control-sm" 
-                          placeholder="Optional notes"
+                          placeholder="Notes"
                           value={attendance[student.id]?.notes || ''}
                           onChange={(e) => setAttendance(prev => ({
                             ...prev,
@@ -247,13 +250,13 @@ export default function AttendancePage() {
                         />
                       </td>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      )}
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
