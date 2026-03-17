@@ -79,6 +79,16 @@ export default function MobileLayout({
       {/* Main Content Area */}
       <main className="mobile-content">
         {children}
+        <div style={{ 
+          padding: '24px 16px 40px', 
+          textAlign: 'center', 
+          fontSize: '11px', 
+          color: 'var(--text-muted)',
+          fontWeight: 500,
+          opacity: 0.6
+        }}>
+          Designed & Developed by Abhishek Dargan
+        </div>
       </main>
 
       {/* Bottom Navigation */}

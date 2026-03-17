@@ -110,7 +110,7 @@ export default function LoginPage() {
           </form>
 
           <footer className="login-footer">
-            <p>Version 1.0 • Built with Excellence</p>
+            <p>Designed & Developed by Abhishek Dargan</p>
           </footer>
         </div>
       </div>

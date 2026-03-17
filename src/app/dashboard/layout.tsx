@@ -174,6 +174,17 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
             <FiLogOut className="nav-icon" />
             Sign Out
           </button>
+          <div style={{ 
+            marginTop: '16px', 
+            padding: '8px', 
+            fontSize: '11px', 
+            color: 'var(--text-muted)', 
+            textAlign: 'center',
+            fontWeight: 500,
+            opacity: 0.7
+          }}>
+            Designed & Developed by Abhishek Dargan
+          </div>
         </div>
       </aside>
 
