@@ -59,30 +59,37 @@ export async function POST(req: Request) {
   }
 }
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: Request) {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { searchParams } = new URL(req.url);
   const requestedFacultyId = searchParams.get('facultyId');
-  const userRole = (session.user as any).role?.toLowerCase();
+  
+  // Normalize role and ID
+  const rawRole = (session.user as any).role || '';
+  const userRole = rawRole.toLowerCase();
   const userId = parseInt(session.user.id);
 
   try {
     const where: any = {};
 
-    // Role-based filtering logic
-    if (userRole === 'admin' || userRole === 'superadmin') {
-      // Admins and Superadmins can see all logs or filter by a specific faculty
+    // Only allow admins and superadmins to see all logs
+    const isAdmin = userRole === 'admin' || userRole === 'superadmin';
+
+    if (isAdmin) {
       if (requestedFacultyId) where.facultyId = parseInt(requestedFacultyId);
+      // If no facultyId provided, admins see ALL logs
     } else {
-      // Faculty members can ONLY see their own logs
-      const faculty = await prisma.faculty.findFirst({
+      // Non-admins (faculty/staff) can ONLY see their own logs
+      const faculty = await prisma.faculty.findUnique({
         where: { userId }
       });
 
       if (!faculty) {
-        // If not a faculty member and not an admin, return empty list
+        // If the user isn't an admin and doesn't have a faculty record, they see nothing
         return NextResponse.json([]);
       }
       
