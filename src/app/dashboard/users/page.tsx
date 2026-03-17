@@ -55,7 +55,7 @@ export default function UsersPage() {
   const fetchData = async () => {
     try {
       const [usersRes, rolesRes] = await Promise.all([
-        fetch('/api/users'),
+        fetch('/api/users?excludeRole=student'),
         fetch('/api/roles'),
       ]);
       const usersData = await usersRes.json();

@@ -16,11 +16,18 @@ export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url); // Use query params for filtering
     const roleName = searchParams.get('role');
+    const excludeRole = searchParams.get('excludeRole');
     
     const where: any = {};
     if (roleName) {
       where.role = {
         name: { equals: roleName, mode: 'insensitive' }
+      };
+    } else if (excludeRole) {
+      where.NOT = {
+        role: {
+          name: { equals: excludeRole, mode: 'insensitive' }
+        }
       };
     }
 
