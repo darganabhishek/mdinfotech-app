@@ -12,10 +12,12 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
     const userId = parseInt(session.user.id);
+    const userRole = (session.user as any).role;
     const faculty = await prisma.faculty.findFirst({ where: { userId } });
     
-    if (!faculty) {
-      return NextResponse.json({ error: 'Only faculty members can start sessions' }, { status: 403 });
+    // Authorization: Allow faculty, admin, or superadmin
+    if (!faculty && userRole !== 'admin' && userRole !== 'superadmin') {
+      return NextResponse.json({ error: 'Only faculty or administrators can start sessions' }, { status: 403 });
     }
 
     const qrSecret = crypto.randomBytes(32).toString('hex');
@@ -45,9 +47,9 @@ export async function POST(req: Request) {
         }, { status: 400 });
       }
 
-      // Close existing sessions for this time slot (for the faculty)
+      // Close existing sessions for this time slot (for current creator)
       await prisma.attendanceSession.updateMany({
-        where: { timeSlotId, facultyId: faculty.id, active: true },
+        where: { timeSlotId, creatorId: userId, active: true },
         data: { active: false, endTime: new Date() },
       });
     }
@@ -56,7 +58,8 @@ export async function POST(req: Request) {
       data: {
         timeSlotId,
         batchId,
-        facultyId: faculty.id,
+        facultyId: faculty?.id || null,
+        creatorId: userId,
         qrSecret,
         latitude: parseFloat(body.latitude) || 0,
         longitude: parseFloat(body.longitude) || 0,

@@ -23,6 +23,7 @@ model User {
   notifications      Notification[]
   securityAlerts     SecurityAlert[]
   student            Student?
+  createdSessions    AttendanceSession[] @relation("SessionCreator")
   role               Role?               @relation(fields: [roleId], references: [id])
 }
 
@@ -389,7 +390,8 @@ model AttendanceSession {
   id          Int          @id @default(autoincrement())
   batchId     Int?
   timeSlotId  Int?
-  facultyId   Int
+  facultyId   Int?
+  creatorId   Int?
   qrSecret    String       @unique
   startTime   DateTime     @default(now())
   endTime     DateTime?
@@ -402,7 +404,8 @@ model AttendanceSession {
   attendances Attendance[]
   batch       Batch?       @relation(fields: [batchId], references: [id])
   timeSlot    TimeSlot?    @relation(fields: [timeSlotId], references: [id])
-  faculty     Faculty      @relation(fields: [facultyId], references: [id])
+  faculty     Faculty?     @relation(fields: [facultyId], references: [id])
+  creator     User?        @relation("SessionCreator", fields: [creatorId], references: [id])
 }
 
 model SecurityAlert {

@@ -51,7 +51,7 @@ export async function GET(
       secondsLeft,
       token,
       attendanceCount: session._count.attendances,
-      timeSlotName: session.timeSlot?.label || (session.batch ? `${session.batch.course.name} - ${session.batch.name}` : 'Ongoing Session'),
+      timeSlotName: session.timeSlot?.label || (session.faculty?.name ? `${session.faculty.name} - Session` : 'Admin Session'),
     });
   } catch (error) {
     console.error('QR generation error:', error);
