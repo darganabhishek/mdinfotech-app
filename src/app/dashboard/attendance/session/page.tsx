@@ -7,11 +7,11 @@ import { useMediaQuery } from '@/hooks/useMediaQuery';
 import MobileAttendanceSession from '@/components/attendance/MobileAttendanceSession';
 
 export default function AttendanceSessionPage() {
-  const [batches, setBatches] = useState<any[]>([]);
+  const [timeSlots, setTimeSlots] = useState<any[]>([]);
   const [faculty, setFaculty] = useState<any[]>([]);
   const [activeSession, setActiveSession] = useState<any>(null);
   const [qrData, setQrData] = useState<any>(null);
-  const [selectedBatch, setSelectedBatch] = useState('');
+  const [selectedTimeSlot, setSelectedTimeSlot] = useState('');
   const [loading, setLoading] = useState(true);
   const isMobile = useMediaQuery('(max-width: 768px)');
   const timerRef = useRef<any>(null);
@@ -23,15 +23,15 @@ export default function AttendanceSessionPage() {
 
   const fetchData = async () => {
     try {
-      const bRes = await fetch('/api/batches');
-      setBatches(await bRes.json());
+      const tsRes = await fetch('/api/timeslots');
+      setTimeSlots(await tsRes.json());
     } catch { toast.error('Failed to load'); }
     finally { setLoading(false); }
   };
 
-  const startSession = async (batchId?: string) => {
-    const bId = batchId || selectedBatch;
-    if (!bId) { toast.error('Select a batch'); return; }
+  const startSession = async (timeSlotId?: string) => {
+    const tsId = timeSlotId || selectedTimeSlot;
+    if (!tsId) { toast.error('Select a time slot'); return; }
 
     // Get current GPS
     let lat = 0, lng = 0;
@@ -47,12 +47,12 @@ export default function AttendanceSessionPage() {
       const res = await fetch('/api/attendance/session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ batchId: bId, latitude: lat, longitude: lng }),
+        body: JSON.stringify({ timeSlotId: tsId, latitude: lat, longitude: lng }),
       });
       if (res.ok) {
         const session = await res.json();
         setActiveSession(session);
-        toast.success(`Session for ${session.batch?.name} started!`);
+        toast.success(`Session for ${session.timeSlot?.label || session.timeSlot?.startTime} started!`);
         startQrRefresh(session.id);
       } else {
         const err = await res.json();
@@ -79,25 +79,24 @@ export default function AttendanceSessionPage() {
     toast.success('Session ended');
   };
 
-  // Helper to check if batch is currently active based on its time slot
-  const isBatchActiveNow = (batch: any) => {
-    if (!batch.timeSlot) return false;
+  // Helper to check if slot is currently active
+  const isSlotActiveNow = (slot: any) => {
     const now = new Date();
     const currentMins = now.getHours() * 60 + now.getMinutes();
     
-    const [sH, sM] = batch.timeSlot.startTime.split(':').map(Number);
-    const [eH, eM] = batch.timeSlot.endTime.split(':').map(Number);
+    const [sH, sM] = slot.startTime.split(':').map(Number);
+    const [eH, eM] = slot.endTime.split(':').map(Number);
     return currentMins >= (sH * 60 + sM - 15) && currentMins <= (eH * 60 + eM + 15);
   };
 
   if (loading) return <div className="page-loading"><div className="loading-spinner" /></div>;
 
-  const activeBatches = batches.filter(isBatchActiveNow);
+  const activeSlots = timeSlots.filter(isSlotActiveNow);
 
   if (isMobile) {
     return (
       <MobileAttendanceSession 
-        batches={activeBatches}
+        timeSlots={activeSlots}
         activeSession={activeSession}
         qrData={qrData}
         onStart={startSession}
@@ -106,13 +105,6 @@ export default function AttendanceSessionPage() {
     );
   }
   
-  // Group batches by their time slot name/time
-  const groupedBatches = batches.reduce((acc: any, batch: any) => {
-    const slotLabel = batch.timeSlot ? `${batch.timeSlot.name} (${batch.timeSlot.startTime} - ${batch.timeSlot.endTime})` : 'Unscheduled Batches';
-    if (!acc[slotLabel]) acc[slotLabel] = [];
-    acc[slotLabel].push(batch);
-    return acc;
-  }, {});
 
   return (
     <div>
@@ -126,33 +118,31 @@ export default function AttendanceSessionPage() {
       {!activeSession ? (
         <div className="data-card" style={{ padding: '24px', maxWidth: '600px' }}>
           <div className="form-group">
-            <label>Select Batch (Grouped by Time Slot) *</label>
-            <select className="form-control" value={selectedBatch} onChange={e => setSelectedBatch(e.target.value)}>
-              <option value="">Choose a batch...</option>
-              {activeBatches.length > 0 && (
+            <label>Select Time Slot *</label>
+            <select className="form-control" value={selectedTimeSlot} onChange={e => setSelectedTimeSlot(e.target.value)}>
+              <option value="">Choose a time slot...</option>
+              {activeSlots.length > 0 && (
                 <optgroup label="🔥 Ongoing Right Now">
-                  {activeBatches.map((b: any) => (
-                    <option key={`active-${b.id}`} value={b.id}>
-                      🟢 {b.name} (Scheduled: {b.timeSlot?.startTime})
+                  {activeSlots.map((ts: any) => (
+                    <option key={`active-${ts.id}`} value={ts.id}>
+                      🟢 {ts.label} ({ts.startTime} - {ts.endTime})
                     </option>
                   ))}
                 </optgroup>
               )}
-              {Object.keys(groupedBatches).sort().map(slot => (
-                <optgroup key={slot} label={slot}>
-                  {groupedBatches[slot].map((b: any) => (
-                    <option key={b.id} value={b.id}>
-                      {isBatchActiveNow(b) ? '🟢' : '⚪'} {b.name}
-                    </option>
-                  ))}
-                </optgroup>
-              ))}
+              <optgroup label="All Time Slots">
+                {timeSlots.map((ts: any) => (
+                  <option key={ts.id} value={ts.id}>
+                    {isSlotActiveNow(ts) ? '🟢' : '⚪'} {ts.label} ({ts.startTime} - {ts.endTime})
+                  </option>
+                ))}
+              </optgroup>
             </select>
           </div>
           
           <div style={{ marginTop: '16px', padding: '16px', background: 'var(--bg-card)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
               <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-                <strong>Note:</strong> Sessions can only be started within 15 minutes of the scheduled time slot.
+                <strong>Note:</strong> Multiple batches scheduled for this time slot will be able to scan this QR code.
               </p>
           </div>
 
@@ -163,9 +153,11 @@ export default function AttendanceSessionPage() {
       ) : (
         <div style={{ textAlign: 'center' }}>
           <div className="data-card" style={{ padding: '32px', display: 'inline-block', maxWidth: '500px' }}>
-            <h3 style={{ marginBottom: '8px', color: 'var(--text-primary)' }}>{qrData?.batchName}</h3>
+            <h3 style={{ marginBottom: '8px', color: 'var(--text-primary)' }}>
+              {qrData?.timeSlotName || activeSession?.timeSlot?.label}
+            </h3>
             <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '20px' }}>
-              Show this QR to the class. Students scan via their portal to mark attendance.
+              Show this QR to the class. Students from all batches in this time slot can scan.
             </p>
 
             {qrData?.qr ? (

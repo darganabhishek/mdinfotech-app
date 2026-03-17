@@ -19,42 +19,42 @@ export async function POST(req: Request) {
     }
 
     const qrSecret = crypto.randomBytes(32).toString('hex');
-    const batchId = parseInt(body.batchId);
+    const timeSlotId = body.timeSlotId ? parseInt(body.timeSlotId) : null;
+    const batchId = body.batchId ? parseInt(body.batchId) : null;
 
-    // Verify batch exists and check time slot
-    const batch = await prisma.batch.findUnique({
-      where: { id: batchId },
-      include: { timeSlot: true }
-    });
+    if (!timeSlotId && !batchId) {
+      return NextResponse.json({ error: 'Either timeSlotId or batchId is required' }, { status: 400 });
+    }
 
-    if (!batch) return NextResponse.json({ error: 'Batch not found' }, { status: 404 });
+    // Verify time slot exists if provided
+    if (timeSlotId) {
+      const timeSlot = await prisma.timeSlot.findUnique({ where: { id: timeSlotId } });
+      if (!timeSlot) return NextResponse.json({ error: 'Time slot not found' }, { status: 404 });
 
-    // Time-slot validation (Simplified: check if current time is within slot)
-    if (batch.timeSlot) {
+      // Time-slot validation
       const now = new Date();
       const currentMinutes = now.getHours() * 60 + now.getMinutes();
-      
-      const [startH, startM] = batch.timeSlot.startTime.split(':').map(Number);
-      const [endH, endM] = batch.timeSlot.endTime.split(':').map(Number);
+      const [startH, startM] = timeSlot.startTime.split(':').map(Number);
+      const [endH, endM] = timeSlot.endTime.split(':').map(Number);
       const startMinutes = startH * 60 + startM;
       const endMinutes = endH * 60 + endM;
 
-      // Allow a 15-minute buffer before and after
       if (currentMinutes < startMinutes - 15 || currentMinutes > endMinutes + 15) {
         return NextResponse.json({ 
-          error: `Access Denied: This batch is scheduled for ${batch.timeSlot.startTime} - ${batch.timeSlot.endTime}. Please start the session during your allotted time.` 
+          error: `Access Denied: Scheduled for ${timeSlot.startTime} - ${timeSlot.endTime}.` 
         }, { status: 400 });
       }
-    }
 
-    // Close any existing active sessions for this batch
-    await prisma.attendanceSession.updateMany({
-      where: { batchId, active: true },
-      data: { active: false, endTime: new Date() },
-    });
+      // Close existing sessions for this time slot (for the faculty)
+      await prisma.attendanceSession.updateMany({
+        where: { timeSlotId, facultyId: faculty.id, active: true },
+        data: { active: false, endTime: new Date() },
+      });
+    }
 
     const attendanceSession = await prisma.attendanceSession.create({
       data: {
+        timeSlotId,
         batchId,
         facultyId: faculty.id,
         qrSecret,
@@ -62,7 +62,10 @@ export async function POST(req: Request) {
         longitude: parseFloat(body.longitude) || 0,
         radius: parseInt(body.radius) || 100,
       },
-      include: { batch: { include: { course: true } } },
+      include: { 
+        batch: { include: { course: true } },
+        timeSlot: true
+      },
     });
 
     return NextResponse.json(attendanceSession, { status: 201 });
@@ -75,11 +78,13 @@ export async function POST(req: Request) {
 // Get active sessions or session list
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
+  const timeSlotId = searchParams.get('timeSlotId');
   const batchId = searchParams.get('batchId');
   const active = searchParams.get('active');
 
   try {
     const where: any = {};
+    if (timeSlotId) where.timeSlotId = parseInt(timeSlotId);
     if (batchId) where.batchId = parseInt(batchId);
     if (active === 'true') where.active = true;
 
@@ -87,6 +92,7 @@ export async function GET(req: Request) {
       where,
       include: {
         batch: { include: { course: true } },
+        timeSlot: true,
         faculty: { select: { name: true } },
         _count: { select: { attendances: true } },
       },

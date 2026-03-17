@@ -18,7 +18,11 @@ export async function GET(
 
     const session = await prisma.attendanceSession.findUnique({
       where: { id: sessionId },
-      include: { batch: { include: { course: true } }, _count: { select: { attendances: true } } },
+      include: { 
+        batch: { include: { course: true } }, 
+        timeSlot: true,
+        _count: { select: { attendances: true } } 
+      },
     });
 
     if (!session || !session.active) {
@@ -47,7 +51,7 @@ export async function GET(
       secondsLeft,
       token,
       attendanceCount: session._count.attendances,
-      batchName: `${session.batch.course.name} - ${session.batch.name}`,
+      timeSlotName: session.timeSlot?.label || (session.batch ? `${session.batch.course.name} - ${session.batch.name}` : 'Ongoing Session'),
     });
   } catch (error) {
     console.error('QR generation error:', error);

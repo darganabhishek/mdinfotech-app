@@ -13,7 +13,7 @@ export default function AnalyticsPage() {
   }, []);
 
   if (loading) return <div className="page-loading"><div className="loading-spinner" /></div>;
-  if (!data) return <div className="empty-state"><h3>No Analytics Data</h3></div>;
+  if (!data || !data.summary || !data.courses) return <div className="empty-state"><h3>No Analytics Data</h3><p>Could not load time slot analytics. Please try again later.</p></div>;
 
   return (
     <div>

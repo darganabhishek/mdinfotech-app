@@ -358,6 +358,7 @@ model TimeSlot {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   batches   Batch[]
+  sessions  AttendanceSession[]
 }
 
 model Resource {
@@ -386,7 +387,8 @@ model DeviceRegistration {
 
 model AttendanceSession {
   id          Int          @id @default(autoincrement())
-  batchId     Int
+  batchId     Int?
+  timeSlotId  Int?
   facultyId   Int
   qrSecret    String       @unique
   startTime   DateTime     @default(now())
@@ -398,7 +400,8 @@ model AttendanceSession {
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
   attendances Attendance[]
-  batch       Batch        @relation(fields: [batchId], references: [id])
+  batch       Batch?       @relation(fields: [batchId], references: [id])
+  timeSlot    TimeSlot?    @relation(fields: [timeSlotId], references: [id])
   faculty     Faculty      @relation(fields: [facultyId], references: [id])
 }
 

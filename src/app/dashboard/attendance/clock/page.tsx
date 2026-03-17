@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { FiClock, FiLogIn, FiLogOut, FiMapPin, FiUsers } from 'react-icons/fi';
+import { FiClock, FiLogIn, FiLogOut, FiMapPin, FiUsers, FiSearch } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 
 export default function FacultyClockPage() {
@@ -11,6 +11,9 @@ export default function FacultyClockPage() {
   const [processing, setProcessing] = useState(false);
   const [showCamera, setShowCamera] = useState(false);
   const [faceImage, setFaceImage] = useState<string | null>(null);
+  const [selectedLog, setSelectedLog] = useState<any>(null);
+  const [showPhotoModal, setShowPhotoModal] = useState(false);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
 
   useEffect(() => { fetchLogs(); }, []);
 
@@ -165,14 +168,25 @@ export default function FacultyClockPage() {
         <div className="data-card-header"><h3>Recent Activity Logs</h3></div>
         <div className="data-table-wrap">
           <table className="data-table">
-            <thead><tr><th>Date</th><th>Clock In</th><th>Clock Out</th><th>Duration</th><th>Verification</th></tr></thead>
+            <thead><tr><th>Faculty</th><th>Date</th><th>Clock In</th><th>Clock Out</th><th>Duration</th><th>Verification</th><th>Actions</th></tr></thead>
             <tbody>
               {logs.map((l: any) => (
                 <tr key={l.id}>
+                  <td style={{ fontWeight: 600 }}>{l.faculty?.name || 'Staff'}</td>
                   <td>{new Date(l.clockIn).toLocaleDateString()}</td>
                   <td>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      {l.faceImage ? <img src={l.faceImage} style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover' }} /> : <FiClock />}
+                    <div 
+                      style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: l.faceImage ? 'pointer' : 'default' }}
+                      onClick={() => { if (l.faceImage) { setSelectedLog(l); setShowPhotoModal(true); } }}
+                    >
+                      {l.faceImage ? (
+                        <div style={{ position: 'relative' }}>
+                          <img src={l.faceImage} style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--border-color)' }} />
+                          <div style={{ position: 'absolute', bottom: -2, right: -2, background: 'var(--brand-blue)', borderRadius: '50%', padding: '2px' }}>
+                            <FiSearch size={8} color="#fff" />
+                          </div>
+                        </div>
+                      ) : <FiClock />}
                       <span style={{ fontWeight: 600 }}>{new Date(l.clockIn).toLocaleTimeString()}</span>
                     </div>
                   </td>
@@ -182,9 +196,17 @@ export default function FacultyClockPage() {
                   <td style={{ fontWeight: 700 }}>{l.totalHours ? `${l.totalHours}h` : '—'}</td>
                   <td>
                     <div style={{ display: 'flex', gap: '8px' }}>
-                      <FiMapPin title="GPS Verified" style={{ color: l.latitude ? 'var(--brand-green)' : 'var(--text-muted)' }} />
+                      <FiMapPin title="GPS Verified" style={{ color: l.latitude ? 'var(--success)' : 'var(--text-muted)' }} />
                       <FiUsers title="Face Verified" style={{ color: l.faceImage ? 'var(--brand-blue)' : 'var(--text-muted)' }} />
                     </div>
+                  </td>
+                  <td>
+                    <button 
+                      className="btn btn-outline btn-sm"
+                      onClick={() => { setSelectedLog(l); setShowDetailsModal(true); }}
+                    >
+                      Details
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -193,6 +215,109 @@ export default function FacultyClockPage() {
           </table>
         </div>
       </div>
+
+      {/* Photo View Modal */}
+      {showPhotoModal && selectedLog && (
+        <div className="modal-overlay" onClick={() => setShowPhotoModal(false)}>
+          <div className="modal" style={{ maxWidth: '450px' }} onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Face Verification Photo</h3>
+              <button className="modal-close" onClick={() => setShowPhotoModal(false)}>×</button>
+            </div>
+            <div className="modal-body" style={{ padding: '0' }}>
+              <img src={selectedLog.faceImage} alt="Face Verification" style={{ width: '100%', display: 'block' }} />
+              <div style={{ padding: '20px', textAlign: 'center' }}>
+                <p style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{selectedLog.faculty?.name}</p>
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                  Captured at: {new Date(selectedLog.clockIn).toLocaleString()}
+                </p>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-primary" onClick={() => setShowPhotoModal(false)}>Close</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Details Modal */}
+      {showDetailsModal && selectedLog && (
+        <div className="modal-overlay" onClick={() => setShowDetailsModal(false)}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Attendance Details</h3>
+              <button className="modal-close" onClick={() => setShowDetailsModal(false)}>×</button>
+            </div>
+            <div className="modal-body">
+              <div style={{ display: 'flex', gap: '24px', marginBottom: '24px' }}>
+                {selectedLog.faceImage && (
+                  <img src={selectedLog.faceImage} style={{ width: '120px', height: '120px', borderRadius: '12px', objectFit: 'cover', border: '2px solid var(--border-color)' }} />
+                )}
+                <div>
+                  <h4 style={{ fontSize: '1.2rem', marginBottom: '4px' }}>{selectedLog.faculty?.name}</h4>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Date: {new Date(selectedLog.clockIn).toLocaleDateString()}</p>
+                  <div style={{ marginTop: '12px' }}>
+                    <span className={`badge ${selectedLog.clockOut ? 'badge-success' : 'badge-warning'}`}>
+                      {selectedLog.clockOut ? 'Completed' : 'Currently Clocked In'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="data-card" style={{ padding: '20px', background: 'rgba(0,0,0,0.1)' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Clock In</label>
+                    <p style={{ fontWeight: 600 }}>{new Date(selectedLog.clockIn).toLocaleTimeString()}</p>
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Clock Out</label>
+                    <p style={{ fontWeight: 600 }}>{selectedLog.clockOut ? new Date(selectedLog.clockOut).toLocaleTimeString() : '—'}</p>
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Total Duration</label>
+                    <p style={{ fontWeight: 600, color: 'var(--text-accent)' }}>{selectedLog.totalHours ? `${selectedLog.totalHours} hours` : 'Ongoing'}</p>
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Verification</label>
+                    <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+                       <span style={{ fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--success)' }}>
+                         <FiMapPin /> GPS
+                       </span>
+                       <span style={{ fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--brand-blue)' }}>
+                         <FiUsers /> Face
+                       </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {selectedLog.latitude && (
+                <div style={{ marginTop: '24px' }}>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '8px' }}>Location Trace</label>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', background: 'var(--bg-input)', borderRadius: '8px' }}>
+                    <FiMapPin size={24} color="var(--danger)" />
+                    <div>
+                      <p style={{ fontSize: '0.9rem' }}>Coordinates: {selectedLog.latitude.toFixed(6)}, {selectedLog.longitude.toFixed(6)}</p>
+                      <a 
+                        href={`https://www.google.com/maps?q=${selectedLog.latitude},${selectedLog.longitude}`} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        style={{ fontSize: '0.85rem', color: 'var(--text-accent)', textDecoration: 'underline' }}
+                      >
+                        View on Google Maps
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-outline" onClick={() => setShowDetailsModal(false)}>Close</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

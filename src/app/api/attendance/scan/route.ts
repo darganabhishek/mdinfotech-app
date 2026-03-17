@@ -41,7 +41,10 @@ export async function POST(req: Request) {
     // 1. Find the active session
     const attSession = await prisma.attendanceSession.findUnique({
       where: { id: parseInt(sessionId) },
-      include: { batch: { include: { admissions: { include: { student: true } } } } },
+      include: { 
+        batch: { include: { admissions: true } },
+        timeSlot: true
+      },
     });
 
     if (!attSession || !attSession.active) {
@@ -90,21 +93,45 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'No student profile linked to your account' }, { status: 400 });
     }
 
-    // 6. Check enrollment
-    const enrollment = attSession.batch.admissions.find((a: any) => a.studentId === student.id);
-    if (!enrollment) {
-      return NextResponse.json({ error: 'You are not enrolled in this batch' }, { status: 400 });
+    // 6. Find target batch for this student
+    let targetBatchId = attSession.batchId;
+
+    if (attSession.timeSlotId) {
+      // Find a batch the student is enrolled in that matches this session's time slot
+      const studentBatch = await prisma.batch.findFirst({
+        where: {
+          timeSlotId: attSession.timeSlotId,
+          admissions: { some: { studentId: student.id, status: 'active' } }
+        }
+      });
+      
+      if (!studentBatch) {
+        return NextResponse.json({ error: 'You are not enrolled in any batch for this time slot' }, { status: 400 });
+      }
+      targetBatchId = studentBatch.id;
+    } else if (targetBatchId) {
+      // Fallback to original batch-specific check
+      const enrollment = await prisma.admission.findFirst({
+        where: { studentId: student.id, batchId: targetBatchId, status: 'active' }
+      });
+      if (!enrollment) {
+        return NextResponse.json({ error: 'You are not enrolled in this batch' }, { status: 400 });
+      }
+    }
+
+    if (!targetBatchId) {
+      return NextResponse.json({ error: 'Could not identify target batch for attendance' }, { status: 400 });
     }
 
     // 7. Mark attendance
     const today = new Date().toISOString().split('T')[0];
     const attendance = await prisma.attendance.upsert({
-      where: { date_studentId_batchId: { date: today, studentId: student.id, batchId: attSession.batchId } },
+      where: { date_studentId_batchId: { date: today, studentId: student.id, batchId: targetBatchId } },
       create: {
         date: today,
         status: 'present',
         studentId: student.id,
-        batchId: attSession.batchId,
+        batchId: targetBatchId,
         markedById: userId,
         deviceFingerprint,
         latitude,
