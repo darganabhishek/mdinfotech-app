@@ -60,21 +60,45 @@ export async function POST(req: Request) {
 }
 
 export async function GET(req: Request) {
+  const session = await getServerSession(authOptions);
+  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
   const { searchParams } = new URL(req.url);
-  const facultyId = searchParams.get('facultyId');
+  const requestedFacultyId = searchParams.get('facultyId');
+  const userRole = (session.user as any).role?.toLowerCase();
+  const userId = parseInt(session.user.id);
 
   try {
     const where: any = {};
-    if (facultyId) where.facultyId = parseInt(facultyId);
+
+    // Role-based filtering logic
+    if (userRole === 'admin' || userRole === 'superadmin') {
+      // Admins and Superadmins can see all logs or filter by a specific faculty
+      if (requestedFacultyId) where.facultyId = parseInt(requestedFacultyId);
+    } else {
+      // Faculty members can ONLY see their own logs
+      const faculty = await prisma.faculty.findFirst({
+        where: { userId }
+      });
+
+      if (!faculty) {
+        // If not a faculty member and not an admin, return empty list
+        return NextResponse.json([]);
+      }
+      
+      where.facultyId = faculty.id;
+    }
 
     const logs = await prisma.facultyClockLog.findMany({
       where,
       include: { faculty: { select: { name: true } } },
       orderBy: { clockIn: 'desc' },
-      take: 50,
+      take: 100,
     });
+    
     return NextResponse.json(logs);
   } catch (error) {
+    console.error('Error fetching faculty logs:', error);
     return NextResponse.json({ error: 'Failed to fetch logs' }, { status: 500 });
   }
 }
