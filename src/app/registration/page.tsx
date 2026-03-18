@@ -96,6 +96,20 @@ export default function RegistrationPage() {
       return;
     }
 
+    if (form.dob) {
+      const birthDate = new Date(form.dob);
+      const today = new Date();
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const m = today.getMonth() - birthDate.getMonth();
+      if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+      }
+      if (age < 10) {
+        alert('Student must be at least 10 years old for admission.');
+        return;
+      }
+    }
+
     setLoading(true);
     try {
       const res = await fetch('/api/register', {
@@ -173,7 +187,13 @@ export default function RegistrationPage() {
                 <label>Date of Birth *</label>
                 <div className="input-with-icon">
                   <FiCalendar className="icon" />
-                  <input type="date" required value={form.dob} onChange={e => setForm({...form, dob: e.target.value})} />
+                  <input 
+                    type="date" 
+                    required 
+                    value={form.dob} 
+                    max={new Date(new Date().setFullYear(new Date().getFullYear() - 10)).toISOString().split('T')[0]}
+                    onChange={e => setForm({...form, dob: e.target.value})} 
+                  />
                 </div>
               </div>
               <div className="form-group">

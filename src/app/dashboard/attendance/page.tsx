@@ -40,7 +40,10 @@ export default function AttendancePage() {
         
       const res = await fetch(url);
       const data = await res.json();
-      const admissionList = data.admissions || [];
+      const admissionList = (data.admissions || []).filter((a: any) => {
+        if (!a.admissionDate) return true;
+        return new Date(a.admissionDate) <= new Date(date);
+      });
       setAdmissions(admissionList);
 
       // Fetch existing attendance for this date

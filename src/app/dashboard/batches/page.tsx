@@ -10,6 +10,10 @@ export default function BatchesPage() {
   const [editBatch, setEditBatch] = useState<any>(null);
   const [toast, setToast] = useState<{ type: string; msg: string } | null>(null);
   const [form, setForm] = useState({ name: '', courseId: 0, timeSlotId: 0, timing: '', instructor: '', capacity: 20, status: 'active' });
+  const [showStudentsModal, setShowStudentsModal] = useState(false);
+  const [selectedBatch, setSelectedBatch] = useState<any>(null);
+  const [batchStudents, setBatchStudents] = useState<any[]>([]);
+  const [loadingStudents, setLoadingStudents] = useState(false);
 
   const fetch_data = async () => {
     setLoading(true);
@@ -40,7 +44,7 @@ export default function BatchesPage() {
       courseId: Number(form.courseId), 
       timeSlotId: Number(form.timeSlotId),
       capacity: Number(form.capacity),
-      name: form.name || `${selectedCourse?.name || 'Course'} Batch`,
+      name: form.name || `${selectedCourse?.name || 'Course'} (${selectedTimeSlot?.label || 'Batch'})`,
       timing: selectedTimeSlot?.label || form.timing
     };
 
@@ -84,6 +88,18 @@ export default function BatchesPage() {
     });
     setEditBatch(b);
     setShowModal(true);
+  };
+
+  const openStudents = async (b: any) => {
+    setSelectedBatch(b);
+    setShowStudentsModal(true);
+    setLoadingStudents(true);
+    try {
+      const res = await fetch(`/api/batches/${b.id}/students`);
+      if (res.ok) setBatchStudents(await res.json());
+      else showToast('error', 'Failed to load students');
+    } catch { showToast('error', 'Failed to load students'); }
+    finally { setLoadingStudents(false); }
   };
 
   const openNew = () => {
@@ -174,7 +190,13 @@ export default function BatchesPage() {
                                   </div>
                                 </div>
                               </td>
-                              <td>{b.instructor || <span style={{ color: 'var(--text-muted)' }}>TBD</span>}</td>
+                                <td>
+                                  {b.instructor ? (
+                                    <div style={{ fontWeight: 600, color: 'var(--brand-blue)' }}>{b.instructor}</div>
+                                  ) : (
+                                    <span style={{ color: 'var(--danger)', fontWeight: 600 }}>Not Assigned</span>
+                                  )}
+                                </td>
                               <td>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                   <div style={{ 
@@ -190,11 +212,17 @@ export default function BatchesPage() {
                                       background: isFull ? 'var(--danger)' : 'var(--brand-blue)'
                                     }} />
                                   </div>
-                                  <span style={{ 
-                                    fontWeight: 600, 
-                                    fontSize: '0.9rem',
-                                    color: isFull ? 'var(--danger)' : 'var(--text-primary)' 
-                                  }}>
+                                  <span 
+                                    style={{ 
+                                      fontWeight: 600, 
+                                      fontSize: '0.9rem',
+                                      color: isFull ? 'var(--danger)' : 'var(--text-primary)',
+                                      cursor: 'pointer',
+                                      textDecoration: 'underline'
+                                    }}
+                                    onClick={() => openStudents(b)}
+                                    title="View Enrolled Students"
+                                  >
                                     {enrolled} / {b.capacity}
                                   </span>
                                 </div>
@@ -275,6 +303,48 @@ export default function BatchesPage() {
                 <button type="submit" className="btn btn-primary">{editBatch ? 'Update Batch' : 'Create Batch'}</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {showStudentsModal && selectedBatch && (
+        <div className="modal-overlay" onClick={() => setShowStudentsModal(false)}>
+          <div className="modal" style={{ maxWidth: 600 }} onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Enrolled Students - {selectedBatch.name}</h3>
+              <button className="modal-close" onClick={() => setShowStudentsModal(false)}>×</button>
+            </div>
+            <div className="modal-body">
+              {loadingStudents ? <div className="page-loading"><div className="loading-spinner" /></div> : (
+                <div className="data-table-wrap">
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>Enrollment</th>
+                        <th>Student Name</th>
+                        <th>Phone</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {batchStudents.length === 0 ? (
+                        <tr><td colSpan={3} style={{ textAlign: 'center', padding: 20 }}>No students enrolled yet.</td></tr>
+                      ) : batchStudents.map((s: any) => (
+                        <tr key={s.id}>
+                          <td style={{ fontWeight: 600, color: 'var(--brand-blue)' }}>{s.enrollmentNo}</td>
+                          <td>{s.name}</td>
+                          <td>{s.phone}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+            <style jsx>{`
+              .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+              .modal { background: var(--bg-card); border-radius: 16px; width: 95%; max-height: 90vh; overflow-y: auto; }
+              .modal-header { padding: 16px 20px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
+            `}</style>
           </div>
         </div>
       )}

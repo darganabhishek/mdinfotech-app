@@ -33,6 +33,23 @@ export default function AdmissionsPage() {
   const [visibleColumns, setVisibleColumns] = useState<string[]>([
     'student', 'course', 'batch', 'netFee', 'paid', 'balance', 'status', 'date'
   ]);
+  const allAvailableColumns = [
+    { id: 'student', label: 'Student Name' },
+    { id: 'enrollment', label: 'Enrollment No' },
+    { id: 'fatherName', label: 'Father\'s Name' },
+    { id: 'motherName', label: 'Mother\'s Name' },
+    { id: 'phone', label: 'Phone' },
+    { id: 'email', label: 'Email' },
+    { id: 'course', label: 'Course' },
+    { id: 'batch', label: 'Batch' },
+    { id: 'netFee', label: 'Net Fee' },
+    { id: 'paid', label: 'Paid' },
+    { id: 'balance', label: 'Balance' },
+    { id: 'status', label: 'Status' },
+    { id: 'date', label: 'Adm. Date' },
+    { id: 'dob', label: 'DOB' },
+    { id: 'aadhaar', label: 'Aadhaar' }
+  ];
   const [showColumnSelector, setShowColumnSelector] = useState(false);
   
   // Sorting State
@@ -113,6 +130,16 @@ export default function AdmissionsPage() {
       installmentAmount: form.installmentAmount ? Number(form.installmentAmount) : null,
       installmentsCount: form.installmentsCount ? Number(form.installmentsCount) : null
     };
+
+    if (form.paymentPlan === 'monthly' && form.installmentAmount && form.installmentsCount) {
+      const netFee = selectedCourseFee - (Number(form.discount) || 0);
+      const calcTotal = Number(form.installmentAmount) * Number(form.installmentsCount);
+      if (calcTotal !== netFee) {
+        if (!confirm(`The total installments (₹${calcTotal}) do not match the Net Fee (₹${netFee}). \n\nClick OK to save anyway, or Cancel to correct it.`)) {
+          return;
+        }
+      }
+    }
     const res = await fetch(url, { 
       method, 
       headers: { 'Content-Type': 'application/json' }, 
@@ -350,16 +377,7 @@ export default function AdmissionsPage() {
             {showColumnSelector && (
               <div className="dropdown-menu" style={{ position: 'absolute', right: 0, top: '45px', zIndex: 100, background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '12px', boxShadow: 'var(--shadow-lg)', minWidth: '180px' }}>
                 <h4 style={{ margin: '0 0 8px 0', fontSize: '14px' }}>Visible Columns</h4>
-                {[
-                  { id: 'student', label: 'Student' },
-                  { id: 'course', label: 'Course' },
-                  { id: 'batch', label: 'Batch' },
-                  { id: 'netFee', label: 'Net Fee' },
-                  { id: 'paid', label: 'Paid' },
-                  { id: 'balance', label: 'Balance' },
-                  { id: 'status', label: 'Status' },
-                  { id: 'date', label: 'Date' }
-                ].map(col => (
+                {allAvailableColumns.map(col => (
                   <label key={col.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '4px 0', cursor: 'pointer', fontSize: '13px' }}>
                     <input type="checkbox" checked={visibleColumns.includes(col.id)} onChange={() => toggleColumn(col.id)} />
                     {col.label}
@@ -394,6 +412,11 @@ export default function AdmissionsPage() {
                       </div>
                     </th>
                     {visibleColumns.includes('student') && <th style={{ cursor: 'pointer' }} onClick={() => requestSort('student')}>Student {sortConfig?.key === 'student' && (sortConfig.direction === 'asc' ? <FiChevronUp /> : <FiChevronDown />)}</th>}
+                    {visibleColumns.includes('enrollment') && <th>Enrollment</th>}
+                    {visibleColumns.includes('fatherName') && <th>Father's Name</th>}
+                    {visibleColumns.includes('motherName') && <th>Mother's Name</th>}
+                    {visibleColumns.includes('phone') && <th>Phone</th>}
+                    {visibleColumns.includes('email') && <th>Email</th>}
                     {visibleColumns.includes('course') && <th style={{ cursor: 'pointer' }} onClick={() => requestSort('course')}>Course {sortConfig?.key === 'course' && (sortConfig.direction === 'asc' ? <FiChevronUp /> : <FiChevronDown />)}</th>}
                     {visibleColumns.includes('batch') && <th>Batch</th>}
                     {visibleColumns.includes('netFee') && <th style={{ cursor: 'pointer' }} onClick={() => requestSort('netFee')}>Net Fee {sortConfig?.key === 'netFee' && (sortConfig.direction === 'asc' ? <FiChevronUp /> : <FiChevronDown />)}</th>}
@@ -401,6 +424,8 @@ export default function AdmissionsPage() {
                     {visibleColumns.includes('balance') && <th style={{ cursor: 'pointer' }} onClick={() => requestSort('balance')}>Balance {sortConfig?.key === 'balance' && (sortConfig.direction === 'asc' ? <FiChevronUp /> : <FiChevronDown />)}</th>}
                     {visibleColumns.includes('status') && <th>Status</th>}
                     {visibleColumns.includes('date') && <th style={{ cursor: 'pointer' }} onClick={() => requestSort('admissionDate')}>Date {sortConfig?.key === 'admissionDate' && (sortConfig.direction === 'asc' ? <FiChevronUp /> : <FiChevronDown />)}</th>}
+                    {visibleColumns.includes('dob') && <th>DOB</th>}
+                    {visibleColumns.includes('aadhaar') && <th>Aadhaar</th>}
                     <th>Actions</th>
                   </tr>
                 </thead>
@@ -423,11 +448,13 @@ export default function AdmissionsPage() {
                           </div>
                         </td>
                         {visibleColumns.includes('student') && (
-                          <td>
-                            <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{a.student?.name}</div>
-                            <div style={{ fontSize: '0.8rem', color: 'var(--text-accent)' }}>{a.student?.enrollmentNo}</div>
-                          </td>
+                          <td style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{a.student?.name}</td>
                         )}
+                        {visibleColumns.includes('enrollment') && <td style={{ fontSize: '0.8rem', color: 'var(--text-accent)' }}>{a.student?.enrollmentNo}</td>}
+                        {visibleColumns.includes('fatherName') && <td>{a.student?.fatherName}</td>}
+                        {visibleColumns.includes('motherName') && <td>{a.student?.motherName}</td>}
+                        {visibleColumns.includes('phone') && <td>{a.student?.phone}</td>}
+                        {visibleColumns.includes('email') && <td style={{ fontSize: '0.8rem' }}>{a.student?.email}</td>}
                         {visibleColumns.includes('course') && <td><span className="badge badge-info">{a.course?.code}</span></td>}
                         {visibleColumns.includes('batch') && <td style={{ fontSize: '0.8rem' }}>{a.batch?.timing || a.batch?.name}</td>}
                         {visibleColumns.includes('netFee') && <td>₹{a.netFee?.toLocaleString()}</td>}
@@ -441,6 +468,8 @@ export default function AdmissionsPage() {
                           <td><span className={statusBadgeClass}>{a.status}</span></td>
                         )}
                         {visibleColumns.includes('date') && <td>{a.admissionDate}</td>}
+                        {visibleColumns.includes('dob') && <td>{a.student?.dob}</td>}
+                        {visibleColumns.includes('aadhaar') && <td style={{ fontSize: '0.8rem' }}>{a.student?.aadhaarNo}</td>}
                         <td>
                           <div style={{ display: 'flex', gap: 8 }}>
                             {a.status === 'pending' ? (
@@ -546,6 +575,12 @@ export default function AdmissionsPage() {
                 <div className="form-group"><label>Student *</label>
                   <select className="form-control" required value={form.studentId} onChange={e => setForm({ ...form, studentId: Number(e.target.value) })}>
                     <option value="">Select Student</option>
+                    {/* Ensure the currently edited student is in the list even if beyond fetch limit */}
+                    {editAdmission && !students.find(s => s.id === editAdmission.studentId) && editAdmission.student && (
+                      <option key={editAdmission.studentId} value={editAdmission.studentId}>
+                        {editAdmission.student.name} ({editAdmission.student.enrollmentNo}) [Current]
+                      </option>
+                    )}
                     {students.map((s: any) => <option key={s.id} value={s.id}>{s.name} ({s.enrollmentNo})</option>)}
                   </select>
                 </div>

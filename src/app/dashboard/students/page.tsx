@@ -63,6 +63,19 @@ export default function StudentsPage() {
       showToast('error', 'Aadhaar number must be 12 digits');
       return;
     }
+    if (form.dob) {
+      const birthDate = new Date(form.dob);
+      const today = new Date();
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const m = today.getMonth() - birthDate.getMonth();
+      if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+      }
+      if (age < 10) {
+        showToast('error', 'Student must be at least 10 years old');
+        return;
+      }
+    }
 
     const url = editStudent ? `/api/students/${editStudent.id}` : '/api/students';
     const method = editStudent ? 'PUT' : 'POST';
@@ -313,7 +326,13 @@ export default function StudentsPage() {
                 <div className="form-row">
                   <div className="form-group">
                     <label>Date of Birth</label>
-                    <input className="form-control" type="date" value={form.dob} onChange={e => setForm({ ...form, dob: e.target.value })} />
+                    <input 
+                      className="form-control" 
+                      type="date" 
+                      value={form.dob} 
+                      max={new Date(new Date().setFullYear(new Date().getFullYear() - 10)).toISOString().split('T')[0]}
+                      onChange={e => setForm({ ...form, dob: e.target.value })} 
+                    />
                   </div>
                   <div className="form-group">
                     <label>Gender</label>

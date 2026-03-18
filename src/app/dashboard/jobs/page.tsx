@@ -135,7 +135,27 @@ export default function JobsManagementPage() {
           <div key={job.id} className="data-card" style={{ padding: 20 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
               <div className="kpi-icon blue" style={{ width: 40, height: 40, fontSize: '1.2rem' }}><FiBriefcase /></div>
-              <button className="btn btn-icon btn-outline-danger btn-sm" title="Delete"><FiTrash2 /></button>
+              <button 
+                className="btn btn-icon btn-outline-danger btn-sm" 
+                title="Delete"
+                onClick={async () => {
+                  if (confirm('Delete this job post?')) {
+                    try {
+                      const res = await fetch(`/api/jobs/${job.id}`, { method: 'DELETE' });
+                      if (res.ok) {
+                        toast.success('Job deleted');
+                        fetchJobs();
+                      } else {
+                        toast.error('Failed to delete');
+                      }
+                    } catch {
+                      toast.error('Connection error');
+                    }
+                  }
+                }}
+              >
+                <FiTrash2 />
+              </button>
             </div>
             <h4 style={{ margin: '0 0 4px' }}>{job.title}</h4>
             <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', fontWeight: 600, marginBottom: 8 }}>{job.company}</div>

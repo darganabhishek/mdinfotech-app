@@ -211,7 +211,27 @@ export default function NoticeManagementPage() {
                     {notice.type === 'file' ? <FiFileText /> : notice.type === 'link' ? <FiLink /> : <FiInfo />}
                   </td>
                   <td>
-                    <button className="btn btn-icon btn-outline-danger" title="Delete"><FiTrash2 /></button>
+                    <button 
+                      className="btn btn-icon btn-outline-danger" 
+                      title="Delete"
+                      onClick={async () => {
+                        if (confirm('Are you sure you want to delete this notice?')) {
+                          try {
+                            const res = await fetch(`/api/notices/${notice.id}`, { method: 'DELETE' });
+                            if (res.ok) {
+                              toast.success('Notice deleted');
+                              fetchData();
+                            } else {
+                              toast.error('Failed to delete');
+                            }
+                          } catch {
+                            toast.error('Connection error');
+                          }
+                        }
+                      }}
+                    >
+                      <FiTrash2 />
+                    </button>
                   </td>
                 </tr>
               ))}

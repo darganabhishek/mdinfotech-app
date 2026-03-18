@@ -126,6 +126,15 @@ export async function POST(request: Request) {
       include: { student: true, course: true, batch: { include: { timeSlot: true } } },
     });
 
+    // Validate installments if plan is monthly
+    if (body.paymentPlan === 'monthly' && body.installmentAmount && body.installmentsCount) {
+      const calcTotal = Number(body.installmentAmount) * Number(body.installmentsCount);
+      if (calcTotal !== netFee) {
+        // We log it or could return error, but for now let's ensure consistency
+        console.warn(`Installment mismatch: ${calcTotal} vs ${netFee}`);
+      }
+    }
+
     // Auto-create User account for Student Portal
     if (admission.student) {
       const existingUser = await prisma.user.findUnique({

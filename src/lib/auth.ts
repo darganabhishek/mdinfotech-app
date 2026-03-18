@@ -22,7 +22,7 @@ export const authOptions: NextAuthOptions = {
         }
 
         const user = await prisma.user.findUnique({
-          where: { username: credentials.username },
+          where: { username: credentials.username.toLowerCase() },
           include: {
             role: {
               include: { permissions: true }

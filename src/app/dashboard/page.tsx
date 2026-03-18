@@ -26,6 +26,7 @@ interface DashboardData {
   myBatches?: number;
   todaysClasses?: any[];
   timetable?: any[];
+  attendance?: { present: number; late: number; absent: number; total: number };
 }
 
 export default function DashboardPage() {
@@ -66,6 +67,14 @@ export default function DashboardPage() {
             </div>
             <div className="kpi-value">₹{(data?.totalPaid || 0).toLocaleString()}</div>
             <div className="kpi-label">Total Paid</div>
+          </div>
+
+          <div className="kpi-card purple">
+            <div className="kpi-header">
+              <div className="kpi-icon purple"><FiCheckCircle /></div>
+            </div>
+            <div className="kpi-value">{data?.attendance?.present || 0} / {data?.attendance?.total || 0}</div>
+            <div className="kpi-label">Attendance (P/Total)</div>
           </div>
 
           <div className="kpi-card orange">
@@ -209,6 +218,35 @@ export default function DashboardPage() {
               )}
             </div>
           </div>
+
+          <div className="data-card">
+            <div className="data-card-header">
+              <h3>🔔 Recent Notices</h3>
+            </div>
+            <div className="notice-list" style={{ padding: '16px' }}>
+              {(data?.recentNotices?.length || 0) > 0 ? (
+                data?.recentNotices?.map((notice: any) => (
+                  <div key={notice.id} style={{
+                    padding: '16px',
+                    borderRadius: '12px',
+                    background: 'var(--bg-input)',
+                    marginBottom: '12px',
+                    borderLeft: '4px solid var(--brand-blue-light)'
+                  }}>
+                    <div style={{ fontWeight: 700, marginBottom: '4px' }}>{notice.title}</div>
+                    <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '8px' }}>
+                      {new Date(notice.createdAt).toLocaleDateString()} — <span className="badge badge-info">{notice.target}</span>
+                    </div>
+                    <div style={{ fontSize: '0.9rem', lineHeight: '1.5' }}>{notice.content?.substring(0, 100)}...</div>
+                  </div>
+                ))
+              ) : (
+                <div style={{ textAlign: 'center', padding: '20px', color: 'var(--text-muted)' }}>
+                  No recent notices
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </>
     );
@@ -329,7 +367,7 @@ export default function DashboardPage() {
         </div>
       )}
 
-      <div className="charts-grid">
+      <div className="charts-grid" style={{ gridTemplateColumns: 'minmax(0, 2fr) minmax(0, 1fr)', gap: 24 }}>
         <div className="data-card">
           <div className="data-card-header">
             <h3>📋 Recent Admissions</h3>
@@ -361,6 +399,35 @@ export default function DashboardPage() {
                 <div className="empty-state-icon">📝</div>
                 <h3>No Admissions Yet</h3>
                 <p>Create your first admission to see it here</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="data-card">
+          <div className="data-card-header">
+            <h3>🔔 Global Notices</h3>
+          </div>
+          <div className="notice-list" style={{ padding: '16px' }}>
+            {(data?.recentNotices?.length || 0) > 0 ? (
+              data?.recentNotices?.map((notice: any) => (
+                <div key={notice.id} style={{
+                  padding: '16px',
+                  borderRadius: '12px',
+                  background: 'var(--bg-input)',
+                  marginBottom: '12px',
+                  borderLeft: '4px solid var(--brand-blue-light)'
+                }}>
+                  <div style={{ fontWeight: 700, marginBottom: '4px' }}>{notice.title}</div>
+                  <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '8px' }}>
+                    {new Date(notice.createdAt).toLocaleDateString()}
+                  </div>
+                  <div style={{ fontSize: '0.9rem', lineHeight: '1.5' }}>{notice.content?.substring(0, 100)}...</div>
+                </div>
+              ))
+            ) : (
+              <div style={{ textAlign: 'center', padding: '20px', color: 'var(--text-muted)' }}>
+                No recent notices
               </div>
             )}
           </div>
